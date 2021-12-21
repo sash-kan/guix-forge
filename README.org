@@ -4,6 +4,22 @@
 
 /guix-forge/ is provided on a best effort basis. Its design is unstable, and open to change. We will try our best to not break your system configuration often, but it might happen.
 
+* Installation
+
+/guix-forge/ is distributed as a Guix channel. To use it, add the following channel definition to your ~/.config/guix/channels.scm file.
+
+#+BEGIN_SRC scheme
+  (channel
+   (name 'guix-forge)
+   (url "https://git.systemreboot.net/guix-forge/")
+   (branch "main")
+   (introduction
+    (make-channel-introduction
+     "2dcd7ddf8e68361dc67bfda5d733bc70c3a9e650"
+     (openpgp-fingerprint
+      "7F73 0343 F2F0 9F3C 77BF  79D3 2E25 EE8B 6180 2BB3"))))
+#+END_SRC
+
 * Philosophy
 
 In order to empower ordinary users, software should not just be free (as in freedom), but also be simple and easy to deploy, especially for small-scale deployments. /guix-forge/ is therefore minimalistic, and does not require running large database servers such as MariaDB and PostgreSQL.
