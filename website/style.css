@@ -1,0 +1,29 @@
+body {
+    margin: 40px auto;
+    max-width: 900px;
+    line-height: 1.6;
+    font-size: 18px;
+    padding: 0 10px;
+}
+
+pre, code {
+    background-color: #f0f0f0;
+}
+
+pre {
+    padding: 1em;
+}
+
+code {
+    padding-left: 0.2em;
+    padding-right: 0.2em;
+}
+
+/* Make the SVG badges clickable. */
+object {
+    pointer-events: none;
+}
+
+img {
+    max-width: 100%;
+}
