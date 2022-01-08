@@ -21,6 +21,7 @@
   #:use-module (gnu)
   #:use-module (srfi srfi-1)
   #:use-module (ice-9 match)
+  #:use-module (gnu packages ci)
   #:use-module (gnu services mcron)
   #:use-module (guix records)
   #:use-module (forge laminar)
