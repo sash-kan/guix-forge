@@ -1,5 +1,5 @@
 ;;; guix-forge --- Guix software forge meta-service
-;;; Copyright © 2021 Arun Isaac <arunisaac@systemreboot.net>
+;;; Copyright © 2021, 2022 Arun Isaac <arunisaac@systemreboot.net>
 ;;;
 ;;; This file is part of guix-forge.
 ;;;
@@ -22,46 +22,46 @@
   #:use-module (srfi srfi-1)
   #:use-module (gnu packages ci)
   #:use-module (guix records)
-  #:export (guix-laminar-service-type
-            guix-laminar-configuration
-            guix-laminar-configuration-state-directory
-            guix-laminar-configuration-jobs
-            guix-laminar-job
-            guix-laminar-job?
-            guix-laminar-job-name
-            guix-laminar-job-run
-            guix-laminar-job-after
-            guix-laminar-group
-            guix-laminar-group?
-            guix-laminar-group-name
-            guix-laminar-group-regex))
+  #:export (forge-laminar-service-type
+            forge-laminar-configuration
+            forge-laminar-configuration-state-directory
+            forge-laminar-configuration-jobs
+            forge-laminar-job
+            forge-laminar-job?
+            forge-laminar-job-name
+            forge-laminar-job-run
+            forge-laminar-job-after
+            forge-laminar-group
+            forge-laminar-group?
+            forge-laminar-group-name
+            forge-laminar-group-regex))
 
-(define-record-type* <guix-laminar-configuration>
-  guix-laminar-configuration make-guix-laminar-configuration
-  guix-laminar-configuration?
-  (state-directory guix-laminar-configuration-state-directory
+(define-record-type* <forge-laminar-configuration>
+  forge-laminar-configuration make-forge-laminar-configuration
+  forge-laminar-configuration?
+  (state-directory forge-laminar-configuration-state-directory
                    (default "/var/lib/laminar"))
-  (jobs guix-laminar-configuration-jobs
+  (jobs forge-laminar-configuration-jobs
         (default '()))
-  (groups guix-laminar-configuration-groups
+  (groups forge-laminar-configuration-groups
           (default '())))
 
-(define-record-type* <guix-laminar-job>
-  guix-laminar-job make-guix-laminar-job
-  guix-laminar-job?
-  (name guix-laminar-job-name)
-  (run guix-laminar-job-run)
-  (after guix-laminar-job-after
+(define-record-type* <forge-laminar-job>
+  forge-laminar-job make-forge-laminar-job
+  forge-laminar-job?
+  (name forge-laminar-job-name)
+  (run forge-laminar-job-run)
+  (after forge-laminar-job-after
          (default #f)))
 
-(define-record-type* <guix-laminar-group>
-  guix-laminar-group make-guix-laminar-group
-  guix-laminar-group?
-  (name guix-laminar-group-name)
-  (regex guix-laminar-group-regex))
+(define-record-type* <forge-laminar-group>
+  forge-laminar-group make-forge-laminar-group
+  forge-laminar-group?
+  (name forge-laminar-group-name)
+  (regex forge-laminar-group-regex))
 
-(define (guix-laminar-activation config)
-  (let* ((state-directory (guix-laminar-configuration-state-directory config))
+(define (forge-laminar-activation config)
+  (let* ((state-directory (forge-laminar-configuration-state-directory config))
          (groups-configuration (string-append state-directory "/cfg/groups.conf"))
          (jobs-directory (string-append state-directory "/cfg/jobs")))
     #~(begin
@@ -73,10 +73,10 @@
         (symlink
          #$(plain-file "laminar-groups"
                        (string-join (map (lambda (group)
-                                           (string-append (guix-laminar-group-name group)
+                                           (string-append (forge-laminar-group-name group)
                                                           "="
-                                                          (guix-laminar-group-regex group)))
-                                         (guix-laminar-configuration-groups config))
+                                                          (forge-laminar-group-regex group)))
+                                         (forge-laminar-configuration-groups config))
                                     "\n"))
          #$groups-configuration)
         ;; Create jobs directory and populate with job scripts.
@@ -86,16 +86,16 @@
         (symlink
          #$(file-union "laminar-jobs"
                        (append-map (lambda (job)
-                                     (let ((name (guix-laminar-job-name job))
-                                           (run (guix-laminar-job-run job))
-                                           (after (guix-laminar-job-after job)))
+                                     (let ((name (forge-laminar-job-name job))
+                                           (run (forge-laminar-job-run job))
+                                           (after (forge-laminar-job-after job)))
                                        (cons (list (string-append name ".run")
                                                    (program-file name run))
                                              (if after
                                                  (list (list (string-append name ".after")
                                                              (program-file name after)))
                                                  (list)))))
-                                   (guix-laminar-configuration-jobs config)))
+                                   (forge-laminar-configuration-jobs config)))
          #$jobs-directory)
         ;; Set permissions for laminar directory.
         (for-each (lambda (file)
@@ -107,18 +107,18 @@
                                       '(regular directory)))
                               #:directories? #t)))))
 
-(define guix-laminar-service-type
+(define forge-laminar-service-type
   (service-type
-   (name 'guix-laminar)
-   (description "Run guix-laminar.")
+   (name 'forge-laminar)
+   (description "Run forge-laminar.")
    (extensions (list (service-extension activation-service-type
-                                        guix-laminar-activation)))
+                                        forge-laminar-activation)))
    (compose concatenate)
    (extend (lambda (config extended-values)
-             (guix-laminar-configuration
+             (forge-laminar-configuration
               (inherit config)
-              (jobs (append (guix-laminar-configuration-jobs config)
-                            (filter guix-laminar-job? extended-values)))
-              (groups (append (guix-laminar-configuration-groups config)
-                              (filter guix-laminar-group? extended-values))))))
-   (default-value (guix-laminar-configuration))))
+              (jobs (append (forge-laminar-configuration-jobs config)
+                            (filter forge-laminar-job? extended-values)))
+              (groups (append (forge-laminar-configuration-groups config)
+                              (filter forge-laminar-group? extended-values))))))
+   (default-value (forge-laminar-configuration))))

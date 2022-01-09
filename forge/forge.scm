@@ -75,7 +75,7 @@
                       (forge-project-configuration-website-directory project)
                       (post-receive-hook
                        (forge-project-configuration-name project)
-                       (map guix-laminar-job-name
+                       (map forge-laminar-job-name
                             (forge-project-configuration-ci-jobs project)))))
               (forge-configuration-projects config))))
     #~(begin
@@ -119,7 +119,7 @@
    (description "Run guix-forge.")
    (extensions (list (service-extension activation-service-type
                                         forge-activation)
-                     (service-extension guix-laminar-service-type
+                     (service-extension forge-laminar-service-type
                                         (lambda (config)
                                           (append
                                            ;; jobs
@@ -131,9 +131,9 @@
                                                            (() #f)
                                                            ((job) #f)
                                                            (jobs
-                                                            (guix-laminar-group
+                                                            (forge-laminar-group
                                                              (name (forge-project-configuration-name project))
-                                                             (regex (string-join (map guix-laminar-job-name jobs)
+                                                             (regex (string-join (map forge-laminar-job-name jobs)
                                                                                  "|"))))))
                                                        (forge-configuration-projects config)))))
                      ;; Set up cron jobs to trigger CI jobs for remote
@@ -148,7 +148,7 @@
                                                              #~(job '(next-day)
                                                                     #$(post-receive-hook
                                                                        (forge-project-configuration-name project)
-                                                                       (map guix-laminar-job-name
+                                                                       (map forge-laminar-job-name
                                                                             (forge-project-configuration-ci-jobs project)))
                                                                     #:user "laminar")))
                                                       (forge-configuration-projects config))))))
