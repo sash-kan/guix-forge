@@ -38,7 +38,10 @@
   forge-project-configuration make-forge-project-configuration
   forge-project-configuration?
   (name forge-project-configuration-name)
-  (user forge-project-configuration-user)
+  ;; The user field is optional because the repository may be remote
+  ;; and not need to be owned by any user.
+  (user forge-project-configuration-user
+        (default #f))
   (repository forge-project-configuration-repository)
   (description forge-project-configuration-description
                (default #f))
