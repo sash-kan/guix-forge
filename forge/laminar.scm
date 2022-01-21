@@ -62,11 +62,14 @@
 
 (define (forge-laminar-activation config)
   (let* ((state-directory (forge-laminar-configuration-state-directory config))
-         (groups-configuration (string-append state-directory "/cfg/groups.conf"))
-         (jobs-directory (string-append state-directory "/cfg/jobs")))
+         (configuration-directory (string-append state-directory "/cfg"))
+         (groups-configuration (string-append configuration-directory "/groups.conf"))
+         (jobs-directory (string-append configuration-directory "/jobs")))
     #~(begin
         (use-modules (srfi srfi-26))
 
+        ;; Ensure configuration directory exists.
+        (mkdir-p #$configuration-directory)
         ;; Configure groups.
         (when (file-exists? #$groups-configuration)
           (delete-file #$groups-configuration))
