@@ -1,5 +1,5 @@
 ;;; guix-forge --- Guix software forge meta-service
-;;; Copyright © 2021 Arun Isaac <arunisaac@systemreboot.net>
+;;; Copyright © 2021, 2022 Arun Isaac <arunisaac@systemreboot.net>
 ;;;
 ;;; This file is part of guix-forge.
 ;;;
