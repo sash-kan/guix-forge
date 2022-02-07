@@ -31,6 +31,7 @@
             forge-project-configuration
             forge-project-configuration-user
             forge-project-configuration-repository
+            forge-project-configuration-repository-branch
             forge-project-configuration-website-directory
             forge-project-configuration-ci-jobs))
 
@@ -43,6 +44,8 @@
   (user forge-project-configuration-user
         (default #f))
   (repository forge-project-configuration-repository)
+  (repository-branch forge-project-configuration-repository-branch
+                     (default "main"))
   (description forge-project-configuration-description
                (default #f))
   (website-directory forge-project-configuration-website-directory
