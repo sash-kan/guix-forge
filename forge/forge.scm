@@ -22,8 +22,15 @@
   #:use-module (srfi srfi-1)
   #:use-module (ice-9 match)
   #:use-module (gnu packages ci)
+  #:use-module ((gnu packages gnupg) #:select (guile-gcrypt))
+  #:use-module ((gnu packages guile) #:select (guile-3.0 guile-zlib))
+  #:use-module ((gnu packages version-control) #:select (git-minimal))
   #:use-module (gnu services mcron)
+  #:use-module (guix gexp)
+  #:use-module (guix modules)
+  #:use-module (guix packages)
   #:use-module (guix records)
+  #:use-module (guix store)
   #:use-module (forge laminar)
   #:export (forge-service-type
             forge-configuration
@@ -33,7 +40,11 @@
             forge-project-configuration-repository
             forge-project-configuration-repository-branch
             forge-project-configuration-website-directory
-            forge-project-configuration-ci-jobs))
+            forge-project-configuration-ci-jobs
+            forge-derivation-job
+            forge-derivation-job-name
+            forge-derivation-job-run
+            forge-derivation-job-after))
 
 (define-record-type* <forge-project-configuration>
   forge-project-configuration make-forge-project-configuration
@@ -53,11 +64,40 @@
   (ci-jobs forge-project-configuration-ci-jobs
            (default '())))
 
+(define-record-type* <forge-derivation-job>
+  forge-derivation-job make-forge-derivation-job
+  forge-derivation-job?
+  (name forge-derivation-job-name)
+  (run forge-derivation-job-run)
+  (after forge-derivation-job-after
+         (default #f)))
+
 (define-record-type* <forge-configuration>
   forge-configuration make-forge-configuration
   forge-configuration?
   (projects forge-configuration-projects
             (default '())))
+
+(define (forge-project-configuration-laminar-jobs project)
+  "Return CI jobs of PROJECT as a list of <forge-laminar-job>
+objects. PROJECT is a <forge-project-configuration> object. If PROJECT
+has jobs described by <forge-derivation-job> objects, transform them
+to <forge-laminar-job> objects."
+  (map (lambda (job)
+         (if (forge-derivation-job? job)
+             (forge-laminar-job
+              (name (forge-derivation-job-name job))
+              (run (gexp-producer->job-script
+                    (forge-project-configuration-repository project)
+                    (forge-project-configuration-repository-branch project)
+                    (forge-derivation-job-run job)
+                    #:git-checkout-name (string-append (forge-project-configuration-name project)
+                                                       "-checkout")
+                    #:derivation-name (string-append (forge-derivation-job-name job)
+                                                     "-derivation")))
+              (after (forge-derivation-job-after job)))
+             job))
+       (forge-project-configuration-ci-jobs project)))
 
 (define (post-receive-hook project-name ci-jobs)
   "Return a git post-receive-hook that triggers CI-JOBS."
@@ -82,7 +122,7 @@
                       (post-receive-hook
                        (forge-project-configuration-name project)
                        (map forge-laminar-job-name
-                            (forge-project-configuration-ci-jobs project)))))
+                            (forge-project-configuration-laminar-jobs project)))))
               (forge-configuration-projects config))))
     #~(begin
         (use-modules (rnrs io ports)
@@ -119,6 +159,53 @@
                          (chown website-directory (passwd:uid user) (passwd:gid user))))))
                   '#$projects))))
 
+(define (import-module? name)
+  "Return #t if module NAME may be imported.  Else, return #f."
+  (match name
+    (('forge _ ...) #t)
+    (name (guix-module-name? name))))
+
+(define* (gexp-producer->job-script git-repository git-branch gexp-producer
+                                    #:key git-checkout-name derivation-name)
+  "Return a G-expression describing a laminar job script.
+GEXP-PRODUCER is a G-expression that expands to a lambda function.
+The lambda function takes one argument---the latest git checkout of
+GIT-REPOSITORY at GIT-BRANCH---and returns a G-expression describing a
+derivation to run."
+  (with-imported-modules (source-module-closure '((forge build git)
+                                                  (guix gexp)
+                                                  (guix profiles))
+                                                #:select? import-module?)
+    (with-extensions (list guile-gcrypt guile-zlib)
+      #~(begin
+          (use-modules (forge build git)
+                       (guix derivations)
+                       (guix gexp)
+                       (guix monads)
+                       (guix store)
+                       (rnrs exceptions))
+
+          (with-store store
+            (guard (condition ((store-protocol-error? condition)
+                               (exit #f)))
+              (format (current-error-port)
+                      "Built ~a successfully~%"
+                      (run-with-store store
+                        (mlet* %store-monad ((git-checkout (latest-git-checkout #$git-checkout-name
+                                                                                #$git-repository
+                                                                                #$git-branch
+                                                                                #:git-command #$(file-append git-minimal "/bin/git")))
+                                             (tests-drv (gexp->derivation #$derivation-name
+                                                          (#$gexp-producer git-checkout)
+                                                          #:guile-for-build (read-derivation-from-file
+                                                                             #$(raw-derivation-file
+                                                                                (with-store store
+                                                                                  (package-derivation store guile-3.0))))
+                                                          #:substitutable? #f)))
+                          (mbegin %store-monad
+                            (built-derivations (list tests-drv))
+                            (return (derivation->output-path tests-drv))))))))))))
+
 (define forge-service-type
   (service-type
    (name 'forge)
@@ -129,11 +216,11 @@
                                         (lambda (config)
                                           (append
                                            ;; jobs
-                                           (append-map forge-project-configuration-ci-jobs
+                                           (append-map forge-project-configuration-laminar-jobs
                                                        (forge-configuration-projects config))
                                            ;; groups
                                            (filter-map (lambda (project)
-                                                         (match (forge-project-configuration-ci-jobs project)
+                                                         (match (forge-project-configuration-laminar-jobs project)
                                                            (() #f)
                                                            ((job) #f)
                                                            (jobs
@@ -155,7 +242,7 @@
                                                                     #$(post-receive-hook
                                                                        (forge-project-configuration-name project)
                                                                        (map forge-laminar-job-name
-                                                                            (forge-project-configuration-ci-jobs project)))
+                                                                            (forge-project-configuration-laminar-jobs project)))
                                                                     #:user "laminar")))
                                                       (forge-configuration-projects config))))))
    (default-value (forge-configuration))))
