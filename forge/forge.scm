@@ -233,8 +233,10 @@ derivation to run."
                                                            (jobs
                                                             (forge-laminar-group
                                                              (name (forge-project-configuration-name project))
-                                                             (regex (string-join (map forge-laminar-job-name jobs)
-                                                                                 "|"))))))
+                                                             (regex (string-append "^(?:"
+                                                                                   (string-join (map forge-laminar-job-name jobs)
+                                                                                                "|")
+                                                                                   ")$"))))))
                                                        (forge-configuration-projects config)))))
                      ;; Set up cron jobs to trigger CI jobs for remote
                      ;; repositories.
