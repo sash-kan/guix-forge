@@ -20,6 +20,7 @@
 (define-module (forge forge)
   #:use-module (gnu)
   #:use-module (srfi srfi-1)
+  #:use-module (srfi srfi-26)
   #:use-module (ice-9 match)
   #:use-module (gnu packages ci)
   #:use-module ((gnu packages gnupg) #:select (guile-gcrypt))
@@ -34,6 +35,7 @@
   #:use-module (forge laminar)
   #:export (forge-service-type
             forge-configuration
+            forge-configuration-guix-daemon-uri
             forge-configuration-projects
             forge-project-configuration
             forge-project-configuration-user
@@ -75,14 +77,17 @@
 (define-record-type* <forge-configuration>
   forge-configuration make-forge-configuration
   forge-configuration?
+  (guix-daemon-uri forge-configuration-guix-daemon-uri
+                   (default (%daemon-socket-uri)))
   (projects forge-configuration-projects
             (default '())))
 
-(define (forge-project-configuration-laminar-jobs project)
+(define (forge-project-configuration-laminar-jobs project config)
   "Return CI jobs of PROJECT as a list of <forge-laminar-job>
-objects. PROJECT is a <forge-project-configuration> object. If PROJECT
-has jobs described by <forge-derivation-job> objects, transform them
-to <forge-laminar-job> objects."
+objects. PROJECT is a <forge-project-configuration> object that is
+part of CONFIG, a <forge-configuration> object. If PROJECT has jobs
+described by <forge-derivation-job> objects, transform them to
+<forge-laminar-job> objects."
   (map (lambda (job)
          (if (forge-derivation-job? job)
              (forge-laminar-job
@@ -94,7 +99,8 @@ to <forge-laminar-job> objects."
                     #:git-checkout-name (string-append (forge-project-configuration-name project)
                                                        "-checkout")
                     #:derivation-name (string-append (forge-derivation-job-name job)
-                                                     "-derivation")))
+                                                     "-derivation")
+                    #:guix-daemon-uri (forge-configuration-guix-daemon-uri config)))
               (after (forge-derivation-job-after job)))
              job))
        (forge-project-configuration-ci-jobs project)))
@@ -122,7 +128,7 @@ to <forge-laminar-job> objects."
                       (post-receive-hook
                        (forge-project-configuration-name project)
                        (map forge-laminar-job-name
-                            (forge-project-configuration-laminar-jobs project)))))
+                            (forge-project-configuration-laminar-jobs project config)))))
               (forge-configuration-projects config))))
     #~(begin
         (use-modules (rnrs io ports)
@@ -166,7 +172,7 @@ to <forge-laminar-job> objects."
     (name (guix-module-name? name))))
 
 (define* (gexp-producer->job-script git-repository git-branch gexp-producer
-                                    #:key git-checkout-name derivation-name)
+                                    #:key git-checkout-name derivation-name guix-daemon-uri)
   "Return a G-expression describing a laminar job script.
 GEXP-PRODUCER is a G-expression that expands to a lambda function.
 The lambda function takes one argument---the latest git checkout of
@@ -185,26 +191,27 @@ derivation to run."
                        (guix store)
                        (rnrs exceptions))
 
-          (with-store store
-            (guard (condition ((store-protocol-error? condition)
-                               (exit #f)))
-              (format (current-error-port)
-                      "Built ~a successfully~%"
-                      (run-with-store store
-                        (mlet* %store-monad ((git-checkout (latest-git-checkout #$git-checkout-name
-                                                                                #$git-repository
-                                                                                #$git-branch
-                                                                                #:git-command #$(file-append git-minimal "/bin/git")))
-                                             (tests-drv (gexp->derivation #$derivation-name
-                                                          (#$gexp-producer git-checkout)
-                                                          #:guile-for-build (read-derivation-from-file
-                                                                             #$(raw-derivation-file
-                                                                                (with-store store
-                                                                                  (package-derivation store guile-3.0))))
-                                                          #:substitutable? #f)))
-                          (mbegin %store-monad
-                            (built-derivations (list tests-drv))
-                            (return (derivation->output-path tests-drv))))))))))))
+          (parameterize ((%daemon-socket-uri #$guix-daemon-uri))
+            (with-store store
+              (guard (condition ((store-protocol-error? condition)
+                                 (exit #f)))
+                (format (current-error-port)
+                        "Built ~a successfully~%"
+                        (run-with-store store
+                          (mlet* %store-monad ((git-checkout (latest-git-checkout #$git-checkout-name
+                                                                                  #$git-repository
+                                                                                  #$git-branch
+                                                                                  #:git-command #$(file-append git-minimal "/bin/git")))
+                                               (tests-drv (gexp->derivation #$derivation-name
+                                                            (#$gexp-producer git-checkout)
+                                                            #:guile-for-build (read-derivation-from-file
+                                                                               #$(raw-derivation-file
+                                                                                  (with-store store
+                                                                                    (package-derivation store guile-3.0))))
+                                                            #:substitutable? #f)))
+                            (mbegin %store-monad
+                              (built-derivations (list tests-drv))
+                              (return (derivation->output-path tests-drv)))))))))))))
 
 (define forge-service-type
   (service-type
@@ -216,11 +223,11 @@ derivation to run."
                                         (lambda (config)
                                           (append
                                            ;; jobs
-                                           (append-map forge-project-configuration-laminar-jobs
+                                           (append-map (cut forge-project-configuration-laminar-jobs <> config)
                                                        (forge-configuration-projects config))
                                            ;; groups
                                            (filter-map (lambda (project)
-                                                         (match (forge-project-configuration-laminar-jobs project)
+                                                         (match (forge-project-configuration-laminar-jobs project config)
                                                            (() #f)
                                                            ((job) #f)
                                                            (jobs
@@ -242,7 +249,7 @@ derivation to run."
                                                                     #$(post-receive-hook
                                                                        (forge-project-configuration-name project)
                                                                        (map forge-laminar-job-name
-                                                                            (forge-project-configuration-laminar-jobs project)))
+                                                                            (forge-project-configuration-laminar-jobs project config)))
                                                                     #:user "laminar")))
                                                       (forge-configuration-projects config))))))
    (default-value (forge-configuration))))
