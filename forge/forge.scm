@@ -43,6 +43,7 @@
             forge-project-configuration-repository-branch
             forge-project-configuration-website-directory
             forge-project-configuration-ci-jobs
+            forge-project-configuration-ci-jobs-trigger
             forge-derivation-job
             forge-derivation-job-name
             forge-derivation-job-run
@@ -64,7 +65,15 @@
   (website-directory forge-project-configuration-website-directory
                      (default #f))
   (ci-jobs forge-project-configuration-ci-jobs
-           (default '())))
+           (default '()))
+  (ci-jobs-trigger forge-project-configuration-ci-jobs-trigger ; one of 'post-receive-hook, 'cron
+                   (default (cond
+                             ;; 'post-receive-hook for local repositories
+                             ((string-prefix? "/" (forge-project-configuration-repository this-record))
+                              'post-receive-hook)
+                             ;; 'cron for remote repositories
+                             (else 'cron)))
+                   (thunked)))
 
 (define-record-type* <forge-derivation-job>
   forge-derivation-job make-forge-derivation-job
@@ -129,7 +138,8 @@ PROJECT-NAME."
                       (ci-jobs-trigger-script
                        (forge-project-configuration-name project)
                        (map forge-laminar-job-name
-                            (forge-project-configuration-laminar-jobs project config)))))
+                            (forge-project-configuration-laminar-jobs project config)))
+                      (forge-project-configuration-ci-jobs-trigger project)))
               (forge-configuration-projects config))))
     #~(begin
         (use-modules (rnrs io ports)
@@ -143,23 +153,24 @@ PROJECT-NAME."
                       #:directories? #t))
         
         (for-each (match-lambda
-                    ((username repository description website-directory ci-jobs-trigger)
+                    ((username repository description website-directory ci-jobs-trigger ci-jobs-trigger-type)
                      ;; For local repositories only
                      (when (string-prefix? "/" repository)
                        ;; Set description.
                        (when description
                          (call-with-output-file (string-append repository "/description")
                            (cut put-string <> description)))
-                       ;; Install post receive hook.
-                       (let ((hook-link (string-append repository "/hooks/post-receive")))
-                         (when (file-exists? hook-link)
-                           (delete-file hook-link))
-                         (symlink ci-jobs-trigger hook-link))
                        ;; Set ownership of repository files.
                        (for-each (lambda (file)
                                    (let ((user (getpw username)))
                                      (chown file (passwd:uid user) (passwd:gid user))))
                                  (append (find-regular-files repository))))
+                     ;; Install post receive hook.
+                     (when (eq? ci-jobs-trigger-type 'post-receive-hook)
+                       (let ((hook-link (string-append repository "/hooks/post-receive")))
+                         (when (file-exists? hook-link)
+                           (delete-file hook-link))
+                         (symlink ci-jobs-trigger hook-link)))
                      ;; Set ownership of website directory.
                      (when website-directory
                        (let ((user (getpw "laminar")))
@@ -246,8 +257,8 @@ derivation to run."
                      (service-extension mcron-service-type
                                         (lambda (config)
                                           (filter-map (lambda (project)
-                                                        (and (not (string-prefix?
-                                                                   "/" (forge-project-configuration-repository project)))
+                                                        (and (eq? (forge-project-configuration-ci-jobs-trigger project)
+                                                                  'cron)
                                                              #~(job '(next-day)
                                                                     #$(ci-jobs-trigger-script
                                                                        (forge-project-configuration-name project)
