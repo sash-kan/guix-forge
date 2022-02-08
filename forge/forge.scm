@@ -105,9 +105,10 @@ described by <forge-derivation-job> objects, transform them to
              job))
        (forge-project-configuration-ci-jobs project)))
 
-(define (post-receive-hook project-name ci-jobs)
-  "Return a git post-receive-hook that triggers CI-JOBS."
-  (program-file (string-append project-name "-post-receive-hook")
+(define (ci-jobs-trigger-script project-name ci-jobs)
+  "Return a script, a file-like object, that triggers CI-JOBS of
+PROJECT-NAME."
+  (program-file (string-append project-name "-ci-jobs-trigger")
                 (with-imported-modules '((guix build utils))
                   #~(begin
                       (use-modules (guix build utils))
@@ -125,7 +126,7 @@ described by <forge-derivation-job> objects, transform them to
                       (forge-project-configuration-repository project)
                       (forge-project-configuration-description project)
                       (forge-project-configuration-website-directory project)
-                      (post-receive-hook
+                      (ci-jobs-trigger-script
                        (forge-project-configuration-name project)
                        (map forge-laminar-job-name
                             (forge-project-configuration-laminar-jobs project config)))))
@@ -142,7 +143,7 @@ described by <forge-derivation-job> objects, transform them to
                       #:directories? #t))
         
         (for-each (match-lambda
-                    ((username repository description website-directory post-receive-hook)
+                    ((username repository description website-directory ci-jobs-trigger)
                      ;; For local repositories only
                      (when (string-prefix? "/" repository)
                        ;; Set description.
@@ -153,7 +154,7 @@ described by <forge-derivation-job> objects, transform them to
                        (let ((hook-link (string-append repository "/hooks/post-receive")))
                          (when (file-exists? hook-link)
                            (delete-file hook-link))
-                         (symlink post-receive-hook hook-link))
+                         (symlink ci-jobs-trigger hook-link))
                        ;; Set ownership of repository files.
                        (for-each (lambda (file)
                                    (let ((user (getpw username)))
@@ -248,7 +249,7 @@ derivation to run."
                                                         (and (not (string-prefix?
                                                                    "/" (forge-project-configuration-repository project)))
                                                              #~(job '(next-day)
-                                                                    #$(post-receive-hook
+                                                                    #$(ci-jobs-trigger-script
                                                                        (forge-project-configuration-name project)
                                                                        (map forge-laminar-job-name
                                                                             (forge-project-configuration-laminar-jobs project config)))
