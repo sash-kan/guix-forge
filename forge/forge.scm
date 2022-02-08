@@ -33,6 +33,7 @@
   #:use-module (guix records)
   #:use-module (guix store)
   #:use-module (forge laminar)
+  #:use-module (forge webhook)
   #:export (forge-service-type
             forge-configuration
             forge-configuration-guix-daemon-uri
@@ -66,7 +67,7 @@
                      (default #f))
   (ci-jobs forge-project-configuration-ci-jobs
            (default '()))
-  (ci-jobs-trigger forge-project-configuration-ci-jobs-trigger ; one of 'post-receive-hook, 'cron
+  (ci-jobs-trigger forge-project-configuration-ci-jobs-trigger ; one of 'post-receive-hook, 'cron, 'webhook
                    (default (cond
                              ;; 'post-receive-hook for local repositories
                              ((string-prefix? "/" (forge-project-configuration-repository this-record))
@@ -265,5 +266,16 @@ derivation to run."
                                                                         (map forge-laminar-job-name
                                                                              (forge-project-configuration-laminar-jobs project config))))
                                                                     #:user "laminar")))
+                                                      (forge-configuration-projects config))))
+                     (service-extension webhook-service-type
+                                        (lambda (config)
+                                          (filter-map (lambda (project)
+                                                        (and (eq? (forge-project-configuration-ci-jobs-trigger project)
+                                                                  'webhook)
+                                                             (webhook-hook
+                                                              (id (forge-project-configuration-name project))
+                                                              (run (ci-jobs-trigger-gexp
+                                                                    (map forge-laminar-job-name
+                                                                         (forge-project-configuration-laminar-jobs project config)))))))
                                                       (forge-configuration-projects config))))))
    (default-value (forge-configuration))))
