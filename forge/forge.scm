@@ -114,19 +114,17 @@ described by <forge-derivation-job> objects, transform them to
              job))
        (forge-project-configuration-ci-jobs project)))
 
-(define (ci-jobs-trigger-script project-name ci-jobs)
-  "Return a script, a file-like object, that triggers CI-JOBS of
-PROJECT-NAME."
-  (program-file (string-append project-name "-ci-jobs-trigger")
-                (with-imported-modules '((guix build utils))
-                  #~(begin
-                      (use-modules (guix build utils))
-                      ;; TODO: Only trigger on updates to the main/master branch.
-                      (display "Triggering continuous integration jobs..." (current-error-port))
-                      (newline (current-error-port))
-                      (apply invoke
-                             #$(file-append laminar "/bin/laminarc")
-                             "queue" '#$ci-jobs)))))
+(define (ci-jobs-trigger-gexp ci-jobs)
+  "Return a G-expression that triggers CI-JOBS."
+  (with-imported-modules '((guix build utils))
+    #~(begin
+        (use-modules (guix build utils))
+        ;; TODO: Only trigger on updates to the main/master branch.
+        (display "Triggering continuous integration jobs..." (current-error-port))
+        (newline (current-error-port))
+        (apply invoke
+               #$(file-append laminar "/bin/laminarc")
+               "queue" '#$ci-jobs))))
 
 (define (forge-activation config)
   (let ((projects
@@ -135,10 +133,11 @@ PROJECT-NAME."
                       (forge-project-configuration-repository project)
                       (forge-project-configuration-description project)
                       (forge-project-configuration-website-directory project)
-                      (ci-jobs-trigger-script
+                      (program-file
                        (forge-project-configuration-name project)
-                       (map forge-laminar-job-name
-                            (forge-project-configuration-laminar-jobs project config)))
+                       (ci-jobs-trigger-gexp
+                        (map forge-laminar-job-name
+                             (forge-project-configuration-laminar-jobs project config))))
                       (forge-project-configuration-ci-jobs-trigger project)))
               (forge-configuration-projects config))))
     #~(begin
@@ -260,10 +259,11 @@ derivation to run."
                                                         (and (eq? (forge-project-configuration-ci-jobs-trigger project)
                                                                   'cron)
                                                              #~(job '(next-day)
-                                                                    #$(ci-jobs-trigger-script
+                                                                    #$(program-file
                                                                        (forge-project-configuration-name project)
-                                                                       (map forge-laminar-job-name
-                                                                            (forge-project-configuration-laminar-jobs project config)))
+                                                                       (ci-jobs-trigger-gexp
+                                                                        (map forge-laminar-job-name
+                                                                             (forge-project-configuration-laminar-jobs project config))))
                                                                     #:user "laminar")))
                                                       (forge-configuration-projects config))))))
    (default-value (forge-configuration))))
