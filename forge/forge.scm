@@ -22,6 +22,7 @@
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-26)
   #:use-module (ice-9 match)
+  #:use-module ((gnu packages certs) #:select (nss-certs))
   #:use-module (gnu packages ci)
   #:use-module ((gnu packages gnupg) #:select (guile-gcrypt))
   #:use-module ((gnu packages guile) #:select (guile-3.0 guile-zlib))
@@ -198,35 +199,35 @@ derivation to run."
                                                   (guix profiles))
                                                 #:select? import-module?)
     (with-extensions (list guile-gcrypt guile-zlib)
-      #~(begin
-          (use-modules (forge build git)
-                       (guix derivations)
-                       (guix gexp)
-                       (guix monads)
-                       (guix store)
-                       (rnrs exceptions))
+      (with-packages (list git-minimal nss-certs)
+        #~(begin
+            (use-modules (forge build git)
+                         (guix derivations)
+                         (guix gexp)
+                         (guix monads)
+                         (guix store)
+                         (rnrs exceptions))
 
-          (parameterize ((%daemon-socket-uri #$guix-daemon-uri))
-            (with-store store
-              (guard (condition ((store-protocol-error? condition)
-                                 (exit #f)))
-                (format (current-error-port)
-                        "Built ~a successfully~%"
-                        (run-with-store store
-                          (mlet* %store-monad ((git-checkout (latest-git-checkout #$git-checkout-name
-                                                                                  #$git-repository
-                                                                                  #$git-branch
-                                                                                  #:git-command #$(file-append git-minimal "/bin/git")))
-                                               (tests-drv (gexp->derivation #$derivation-name
-                                                            (#$gexp-producer git-checkout)
-                                                            #:guile-for-build (read-derivation-from-file
-                                                                               #$(raw-derivation-file
-                                                                                  (with-store store
-                                                                                    (package-derivation store guile-3.0))))
-                                                            #:substitutable? #f)))
-                            (mbegin %store-monad
-                              (built-derivations (list tests-drv))
-                              (return (derivation->output-path tests-drv)))))))))))))
+            (parameterize ((%daemon-socket-uri #$guix-daemon-uri))
+              (with-store store
+                (guard (condition ((store-protocol-error? condition)
+                                   (exit #f)))
+                  (format (current-error-port)
+                          "Built ~a successfully~%"
+                          (run-with-store store
+                            (mlet* %store-monad ((git-checkout (latest-git-checkout #$git-checkout-name
+                                                                                    #$git-repository
+                                                                                    #$git-branch))
+                                                 (tests-drv (gexp->derivation #$derivation-name
+                                                              (#$gexp-producer git-checkout)
+                                                              #:guile-for-build (read-derivation-from-file
+                                                                                 #$(raw-derivation-file
+                                                                                    (with-store store
+                                                                                      (package-derivation store guile-3.0))))
+                                                              #:substitutable? #f)))
+                              (mbegin %store-monad
+                                (built-derivations (list tests-drv))
+                                (return (derivation->output-path tests-drv))))))))))))))
 
 (define forge-service-type
   (service-type

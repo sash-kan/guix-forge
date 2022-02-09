@@ -18,7 +18,7 @@
 ;;; <https://www.gnu.org/licenses/>.
 
 (define-module (forge build git)
-  #:use-module ((guix build git) #:prefix guix-build:)
+  #:use-module (rnrs exceptions)
   #:use-module (guix build utils)
   #:use-module (guix store)
   #:use-module (guix utils)
@@ -34,16 +34,21 @@
 
 ;;; Code:
 
-(define* (download-git-to-store store name url commit #:key (git-command "git"))
-  "Download COMMIT from git repository from URL to STORE under NAME
-and return store path."
+(define (download-git-to-store store name url branch)
+  "Download BRANCH of git repository from URL to STORE under NAME and
+return store path. git and certificates should be in the environment."
   (call-with-temporary-directory
    (lambda (directory)
-     (unless (with-output-to-port (current-error-port)
-               (lambda ()
-                 (guix-build:git-fetch url commit directory
-                                       #:git-command git-command)))
-       (error "Error fetching git repository" url commit))
+     (with-directory-excursion directory
+       (guard (condition ((invoke-error? condition)
+                          (format (current-error-port)
+                                  "git-fetch: '~a~{ ~a~}' failed with exit code ~a~%"
+                                  (invoke-error-program condition)
+                                  (invoke-error-arguments condition)
+                                  (invoke-error-exit-status condition))
+                          (exit #f)))
+         (invoke "git" "clone" "--quiet" "--depth" "1" "--branch" branch url "."))
+       (delete-file-recursively ".git"))
      (add-to-store store name #t "sha256" directory))))
 
 (define latest-git-checkout
