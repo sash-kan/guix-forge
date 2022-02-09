@@ -116,7 +116,8 @@ described by <forge-derivation-job> objects, transform them to
        (forge-project-configuration-ci-jobs project)))
 
 (define (ci-jobs-trigger-gexp ci-jobs)
-  "Return a G-expression that triggers CI-JOBS."
+  "Return a G-expression that triggers CI-JOBS. CI-JOBS is a list of
+<forge-laminar-job> objects."
   (with-imported-modules '((guix build utils))
     #~(begin
         (use-modules (guix build utils))
@@ -125,7 +126,7 @@ described by <forge-derivation-job> objects, transform them to
         (newline (current-error-port))
         (apply invoke
                #$(file-append laminar "/bin/laminarc")
-               "queue" '#$ci-jobs))))
+               "queue" '#$(map forge-laminar-job-name ci-jobs)))))
 
 (define (forge-activation config)
   (let ((projects
@@ -137,8 +138,7 @@ described by <forge-derivation-job> objects, transform them to
                       (program-file
                        (forge-project-configuration-name project)
                        (ci-jobs-trigger-gexp
-                        (map forge-laminar-job-name
-                             (forge-project-configuration-laminar-jobs project config))))
+                        (forge-project-configuration-laminar-jobs project config)))
                       (forge-project-configuration-ci-jobs-trigger project)))
               (forge-configuration-projects config))))
     #~(begin
@@ -263,8 +263,7 @@ derivation to run."
                                                                     #$(program-file
                                                                        (forge-project-configuration-name project)
                                                                        (ci-jobs-trigger-gexp
-                                                                        (map forge-laminar-job-name
-                                                                             (forge-project-configuration-laminar-jobs project config))))
+                                                                        (forge-project-configuration-laminar-jobs project config)))
                                                                     #:user "laminar")))
                                                       (forge-configuration-projects config))))
                      (service-extension webhook-service-type
@@ -275,7 +274,6 @@ derivation to run."
                                                              (webhook-hook
                                                               (id (forge-project-configuration-name project))
                                                               (run (ci-jobs-trigger-gexp
-                                                                    (map forge-laminar-job-name
-                                                                         (forge-project-configuration-laminar-jobs project config)))))))
+                                                                    (forge-project-configuration-laminar-jobs project config))))))
                                                       (forge-configuration-projects config))))))
    (default-value (forge-configuration))))
