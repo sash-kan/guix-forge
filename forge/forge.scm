@@ -124,8 +124,8 @@ described by <forge-derivation-job> objects, transform them to
         ;; TODO: Only trigger on updates to the main/master branch.
         (display "Triggering continuous integration jobs..." (current-error-port))
         (newline (current-error-port))
-        (when reason
-          (setenv "LAMINAR_REASON" reason))
+        (when #$reason
+          (setenv "LAMINAR_REASON" #$reason))
         (apply invoke
                #$(file-append laminar "/bin/laminarc")
                "queue" '#$(map forge-laminar-job-name ci-jobs)))))
