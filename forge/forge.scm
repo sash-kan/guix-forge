@@ -217,7 +217,8 @@ derivation to run."
                           (run-with-store store
                             (mlet* %store-monad ((git-checkout (latest-git-checkout #$git-checkout-name
                                                                                     #$git-repository
-                                                                                    #$git-branch))
+                                                                                    #$git-branch
+                                                                                    #:show-commit? #t))
                                                  (tests-drv (gexp->derivation #$derivation-name
                                                               (#$gexp-producer git-checkout)
                                                               #:guile-for-build (read-derivation-from-file

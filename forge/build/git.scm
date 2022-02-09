@@ -34,7 +34,13 @@
 
 ;;; Code:
 
-(define (download-git-to-store store name url branch)
+(define (hline)
+  "Print a horizontal line 50 '=' characters long."
+  (display (make-string 50 #\=))
+  (newline)
+  (force-output))
+
+(define* (download-git-to-store store name url branch #:key show-commit?)
   "Download BRANCH of git repository from URL to STORE under NAME and
 return store path. git and certificates should be in the environment."
   (call-with-temporary-directory
@@ -48,6 +54,10 @@ return store path. git and certificates should be in the environment."
                                   (invoke-error-exit-status condition))
                           (exit #f)))
          (invoke "git" "clone" "--quiet" "--depth" "1" "--branch" branch url "."))
+       (when show-commit?
+         (hline)
+         (invoke "git" "--no-pager" "log")
+         (hline))
        (delete-file-recursively ".git"))
      (add-to-store store name #t "sha256" directory))))
 
