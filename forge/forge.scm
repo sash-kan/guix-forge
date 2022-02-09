@@ -34,6 +34,7 @@
   #:use-module (guix records)
   #:use-module (guix store)
   #:use-module (forge laminar)
+  #:use-module (forge utils)
   #:use-module (forge webhook)
   #:export (forge-service-type
             forge-configuration
