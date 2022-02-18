@@ -48,7 +48,7 @@ return store path. git and certificates should be in the environment."
      (with-directory-excursion directory
        (guard (condition ((invoke-error? condition)
                           (format (current-error-port)
-                                  "git-fetch: '~a~{ ~a~}' failed with exit code ~a~%"
+                                  "'~a~{ ~a~}' failed with exit code ~a~%"
                                   (invoke-error-program condition)
                                   (invoke-error-arguments condition)
                                   (invoke-error-exit-status condition))
