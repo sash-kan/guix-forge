@@ -243,7 +243,7 @@ derivation to run."
                                            ;; jobs
                                            (append-map (cut forge-project-configuration-laminar-jobs <> config)
                                                        (forge-configuration-projects config))
-                                           ;; groups
+                                           ;; group jobs by project
                                            (filter-map (lambda (project)
                                                          (match (forge-project-configuration-laminar-jobs project config)
                                                            (() #f)
