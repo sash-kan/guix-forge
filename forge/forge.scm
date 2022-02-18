@@ -284,4 +284,10 @@ derivation to run."
                                                                     (forge-project-configuration-laminar-jobs project config)
                                                                     #:reason "Webhook")))))
                                                       (forge-configuration-projects config))))))
+   (compose concatenate)
+   (extend (lambda (config projects)
+             (forge-configuration
+              (inherit config)
+              (projects (append (forge-configuration-projects config)
+                                projects)))))
    (default-value (forge-configuration))))
