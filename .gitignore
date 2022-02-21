@@ -1,0 +1,4 @@
+doc/*.go
+doc/*.html
+website/index.html
+website/manual
