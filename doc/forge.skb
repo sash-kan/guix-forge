@@ -1,0 +1,54 @@
+;;; guix-forge --- Guix software forge meta-service
+;;; Copyright © 2022 Arun Isaac <arunisaac@systemreboot.net>
+;;;
+;;; This file is part of guix-forge.
+;;;
+;;; guix-forge is free software: you can redistribute it and/or modify
+;;; it under the terms of the GNU General Public License as published
+;;; by the Free Software Foundation, either version 3 of the License,
+;;; or (at your option) any later version.
+;;;
+;;; guix-forge is distributed in the hope that it will be useful, but
+;;; WITHOUT ANY WARRANTY; without even the implied warranty of
+;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;;; General Public License for more details.
+;;;
+;;; You should have received a copy of the GNU General Public License
+;;; along with guix-forge.  If not, see
+;;; <https://www.gnu.org/licenses/>.
+
+(use-modules (doc skribilo))
+
+(document :title [guix-forge]
+  (chapter :title [Introduction]
+    (p [guix-forge is a Guix service that lets you run a complete
+,(ref :url "https://en.wikipedia.org/wiki/Forge_(software)"
+:text "software forge") in the manner of GitHub, GitLab, etc. Unlike
+other free software forges such as GitLab, Gitea, etc., guix-forge is
+not a monolith but is an assemblage of several pieces of server
+software wired up to function as one. In this sense, it is a
+,(emph "meta-service"). guix-forge does for software forges what ,(ref
+:url "https://mailinabox.email/" :text "Mail-in-a-Box") does for
+email.])
+    (p [guix-forge is provided on a best effort basis. Its
+design is unstable, and open to change. We will try our best to not
+break your system configuration often, but it might happen.])
+    (section :title [Philosophy]
+      (p [In order to empower ordinary users, software should not just
+be free (as in freedom), but also be simple and easy to deploy,
+especially for small-scale deployments. guix-forge is therefore
+minimalistic, and does not require running large database servers such
+as MariaDB and PostgreSQL.])
+      (p [While some state is inevitable, server software should
+strive to be as stateless as an old analog television set. You switch
+it on, and it works all the time. There are no pesky software updates,
+and complex hidden state. guix-forge tries to be as stateless as
+possible. Almost all of guix-forge's state can be version controlled,
+and the rest are simple files that can be backed up easily.])
+      (p [,(ref
+:url "https://drewdevault.com/2018/07/23/Git-is-already-distributed.html"
+:text "Git is already federated and decentralized") with
+email. guix-forge acknowledges this and prefers to support git's ,(ref
+:url "https://drewdevault.com/2018/07/02/Email-driven-git.html"
+:text "email driven workflow") with project discussion, bug reports
+and patches all happening over email.]))))

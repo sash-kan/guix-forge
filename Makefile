@@ -17,11 +17,37 @@
 # along with guix-forge.  If not, see <https://www.gnu.org/licenses/>.
 
 EMACS = emacs
+GUILD = guild
+SKRIBILO = skribilo
 
-.PHONY: all
+sources = $(wildcard forge/*.scm) $(wildcard forge/*/*.scm)
+doc_skribilo_config = doc/skribilo.scm
+doc_skribilo_config_go = $(doc_skribilo_config:.scm=.go)
+doc_sources = doc/forge.skb
+doc_html = $(doc_sources:.skb=.html)
+
+.PHONY: all html clean
 all: ;
 
-website: website/index.html
+%.go: %.scm
+	$(GUILD) compile -L . -o $@ $<
+
+html: $(doc_html)
+
+$(doc_html): $(doc_sources) $(sources) $(doc_skribilo_config_go)
+	rm -rf $@
+	mkdir -p $@
+	GUILE_LOAD_PATH=$(CURDIR):$(GUILE_LOAD_PATH) GUILE_LOAD_COMPILED_PATH=$(CURDIR):$(GUILE_LOAD_COMPILED_PATH) $(SKRIBILO) --target=html $< --output=$@/index.html
+
+website: website/index.html website/manual/dev/en
 
 website/index.html: README.org build-aux/build-home-page.el
 	$(EMACS) -Q --batch --load build-aux/build-home-page.el --funcall build-website
+
+website/manual/dev/en: $(doc_html)
+	rm -rf $@
+	mkdir -p $(dir $@)
+	cp -vr $^ $@
+
+clean:
+	rm -f $(doc_skribilo_config_go)
