@@ -53,7 +53,7 @@
   forge-laminar-job?
   this-forge-laminar-job
   (name forge-laminar-job-name)
-  (run forge-laminar-job-run)
+  (run forge-laminar-job-run (thunked))
   (after forge-laminar-job-after
          (default #f)))
 

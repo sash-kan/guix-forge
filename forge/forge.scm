@@ -74,7 +74,7 @@
   (website-directory forge-project-configuration-website-directory
                      (default #f))
   (ci-jobs forge-project-configuration-ci-jobs
-           (default '()))
+           (default '()) (thunked))
   (ci-jobs-trigger forge-project-configuration-ci-jobs-trigger ; one of 'post-receive-hook, 'cron, 'webhook
                    (default (cond
                              ;; 'post-receive-hook for local repositories
