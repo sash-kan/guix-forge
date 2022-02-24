@@ -24,6 +24,7 @@
   #:use-module (guix records)
   #:export (forge-laminar-service-type
             forge-laminar-configuration
+            forge-laminar-configuration?
             forge-laminar-configuration-state-directory
             forge-laminar-configuration-jobs
             forge-laminar-job

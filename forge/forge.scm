@@ -38,9 +38,11 @@
   #:use-module (forge webhook)
   #:export (forge-service-type
             forge-configuration
+            forge-configuration?
             forge-configuration-guix-daemon-uri
             forge-configuration-projects
             forge-project-configuration
+            forge-project-configuration?
             this-forge-project-configuration
             forge-project-configuration-name
             forge-project-configuration-user
@@ -50,6 +52,7 @@
             forge-project-configuration-ci-jobs
             forge-project-configuration-ci-jobs-trigger
             forge-derivation-job
+            forge-derivation-job?
             forge-derivation-job-name
             forge-derivation-job-run
             forge-derivation-job-after))
