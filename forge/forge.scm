@@ -42,6 +42,7 @@
             forge-configuration-projects
             forge-project-configuration
             this-forge-project-configuration
+            forge-project-configuration-name
             forge-project-configuration-user
             forge-project-configuration-repository
             forge-project-configuration-repository-branch
