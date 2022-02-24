@@ -28,6 +28,7 @@
             forge-laminar-configuration-jobs
             forge-laminar-job
             forge-laminar-job?
+            this-forge-laminar-job
             forge-laminar-job-name
             forge-laminar-job-run
             forge-laminar-job-after
@@ -49,6 +50,7 @@
 (define-record-type* <forge-laminar-job>
   forge-laminar-job make-forge-laminar-job
   forge-laminar-job?
+  this-forge-laminar-job
   (name forge-laminar-job-name)
   (run forge-laminar-job-run)
   (after forge-laminar-job-after

@@ -41,6 +41,7 @@
             forge-configuration-guix-daemon-uri
             forge-configuration-projects
             forge-project-configuration
+            this-forge-project-configuration
             forge-project-configuration-user
             forge-project-configuration-repository
             forge-project-configuration-repository-branch
@@ -55,6 +56,7 @@
 (define-record-type* <forge-project-configuration>
   forge-project-configuration make-forge-project-configuration
   forge-project-configuration?
+  this-forge-project-configuration
   (name forge-project-configuration-name)
   ;; The user field is optional because the repository may be remote
   ;; and not need to be owned by any user.
@@ -72,7 +74,8 @@
   (ci-jobs-trigger forge-project-configuration-ci-jobs-trigger ; one of 'post-receive-hook, 'cron, 'webhook
                    (default (cond
                              ;; 'post-receive-hook for local repositories
-                             ((string-prefix? "/" (forge-project-configuration-repository this-record))
+                             ((string-prefix? "/" (forge-project-configuration-repository
+                                                   this-forge-project-configuration))
                               'post-receive-hook)
                              ;; 'cron for remote repositories
                              (else 'cron)))
