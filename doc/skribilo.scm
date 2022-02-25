@@ -20,7 +20,11 @@
 (define-module (doc skribilo)
   #:use-module (rnrs conditions)
   #:use-module (rnrs io ports)
+  #:use-module (srfi srfi-1)
+  #:use-module (srfi srfi-9)
+  #:use-module (srfi srfi-26)
   #:use-module (srfi srfi-28)
+  #:use-module (srfi srfi-171)
   #:use-module (ice-9 match)
   #:use-module (ice-9 regex)
   #:use-module (skribilo ast)
@@ -35,7 +39,9 @@
             command
             scheme-source
             scheme-source-form
-            source-ref))
+            source-ref
+            record-documentation
+            record-field))
 
 ;; Constants
 (define %source-uri-base
@@ -133,6 +139,138 @@ REGEXP. Return it enclosed in a prog form."
                    #:start (1- start)
                    #:stop (1- stop))))
         #:line #f))
+
+(define-record-type <record>
+  (record identifier fields)
+  record?
+  (identifier record-identifier)
+  (fields record-fields))
+
+(define-record-type <no-default>
+  (no-default)
+  no-default?)
+
+(define-record-type <record-field>
+  (make-record-field identifier getter default documentation)
+  record-field?
+  (identifier record-field-identifier)
+  (getter record-field-getter)
+  (default record-field-default)
+  (documentation record-field-documentation))
+
+(define (field-sexp->record-field sexp)
+  "Return a <record-field> object describing the Guix record defined
+by SEXP, an S-expression."
+  (match sexp
+    ((identifier getter other ...)
+     (make-record-field identifier
+                        getter
+                        (fold (lambda (element result)
+                                (match element
+                                  (('default default) default)
+                                  (_ result)))
+                              (no-default)
+                              other)
+                        #f))))
+
+(define (record-sexp->record sexp)
+  "Convert SEXP defining a Guix record type to a <record> object
+describing it."
+  (match sexp
+    (('define-record-type* identifier rest ...)
+     (record identifier
+             (map field-sexp->record-field
+                  (drop-while symbol? rest))))))
+
+(define (find-record-definition file identifier)
+  "Find record identified by IDENTIFIER, a symbol, in FILE."
+  (call-with-input-file file
+    (cut port-transduce
+         (tmap identity)
+         (rany (lambda (sexp)
+                 (match sexp
+                   (('define-record-type* record-type _ ...)
+                    (and (eq? record-type identifier)
+                         (record-sexp->record sexp)))
+                   (_ #f))))
+         read
+         <>)))
+
+(define* (record-field identifier documentation #:key default)
+  "Document record field identified by IDENTIFIER, a symbol, with the
+DOCUMENTATION string. DEFAULT is an optional textual description of
+the default value. DEFAULT, when specified, will override the default
+value extracted from the source."
+  (make-record-field identifier #f default documentation))
+
+(define (expression->string exp)
+  "Return EXP as a human-readable string. In particular, quote forms
+are printed using the quote symbol."
+  (match exp
+    (('quote exp)
+     (string-append "'" (expression->string exp)))
+    (_ (format "~s" exp))))
+
+(define (record-documentation file identifier . fields)
+  "Document record identified by IDENTIFIER, a symbol, in FILE. FIELDS
+are a list of <record-field> objects."
+  (let ((record (or (find-record-definition (search-path (*source-path*) file)
+                                            identifier)
+                    (raise-exception (condition (make-message-condition
+                                                 (format "Unknown record ~a in ~a"
+                                                         identifier file)))))))
+    ;; Run sanity checks.
+    (let* ((documented-fields (map (compose string->symbol record-field-identifier)
+                                   fields))
+           (fields-in-record (map record-field-identifier
+                                  (record-fields record)))
+           (undocumented-fields (lset-difference eq? fields-in-record documented-fields))
+           (unknown-fields (lset-difference eq? documented-fields fields-in-record)))
+      (unless (null? undocumented-fields)
+        (raise-exception (condition (make-message-condition
+                                     (format "Undocumented fields ~a in ~a record documentation"
+                                             undocumented-fields
+                                             identifier))
+                                    (make-irritants-condition undocumented-fields))))
+      (unless (null? unknown-fields)
+        (raise-exception (condition (make-message-condition
+                                     (format "Unknown fields ~a in ~a record documentation"
+                                             unknown-fields
+                                             identifier))
+                                    (make-irritants-condition unknown-fields)))))
+    ;; Generate markup.
+    (item #:key (let ((identifier (symbol->string identifier)))
+                  (list (list "Record Type: "
+                              (mark identifier)
+                              (index #:note "record type" identifier)
+                              (source-ref file
+                                          (string-append "\\(define-record-type\\* " identifier)
+                                          (code identifier)))))
+          (apply description
+                 (map (lambda (documented-field)
+                        (let* ((identifier (record-field-identifier documented-field))
+                               (record-field (find (lambda (field)
+                                                     (eq? (record-field-identifier field)
+                                                          (string->symbol identifier)))
+                                                   (record-fields record))))
+                          (item #:key
+                                (cond
+                                 ;; No default value
+                                 ((no-default? (record-field-default record-field))
+                                  (code identifier))
+                                 ;; Default value in documentation
+                                 ((record-field-default documented-field)
+                                  => (lambda (default)
+                                       (list (append (list (code identifier) " (Default: ")
+                                                     default
+                                                     (list ")")))))
+                                 ;; Default value from the source
+                                 (else (list (list (code identifier) " (Default: "
+                                                   (code (expression->string
+                                                          (record-field-default record-field)))
+                                                   ")"))))
+                                (record-field-documentation documented-field))))
+                      fields)))))
 
 ;; HTML engine customizations
 (let ((html-engine (find-engine 'html)))
