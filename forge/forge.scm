@@ -40,41 +40,40 @@
             forge-configuration
             forge-configuration?
             forge-configuration-projects
-            forge-project-configuration
-            forge-project-configuration?
-            this-forge-project-configuration
-            forge-project-configuration-name
-            forge-project-configuration-user
-            forge-project-configuration-repository
-            forge-project-configuration-repository-branch
-            forge-project-configuration-website-directory
-            forge-project-configuration-ci-jobs
-            forge-project-configuration-ci-jobs-trigger
+            forge-project
+            forge-project?
+            this-forge-project
+            forge-project-name
+            forge-project-user
+            forge-project-repository
+            forge-project-repository-branch
+            forge-project-website-directory
+            forge-project-ci-jobs
+            forge-project-ci-jobs-trigger
             gexp-producer->derivation-output))
 
-(define-record-type* <forge-project-configuration>
-  forge-project-configuration make-forge-project-configuration
-  forge-project-configuration?
-  this-forge-project-configuration
-  (name forge-project-configuration-name)
+(define-record-type* <forge-project>
+  forge-project make-forge-project
+  forge-project?
+  this-forge-project
+  (name forge-project-name)
   ;; The user field is optional because the repository may be remote
   ;; and not need to be owned by any user.
-  (user forge-project-configuration-user
+  (user forge-project-user
         (default #f))
-  (repository forge-project-configuration-repository)
-  (repository-branch forge-project-configuration-repository-branch
+  (repository forge-project-repository)
+  (repository-branch forge-project-repository-branch
                      (default "main"))
-  (description forge-project-configuration-description
+  (description forge-project-description
                (default #f))
-  (website-directory forge-project-configuration-website-directory
+  (website-directory forge-project-website-directory
                      (default #f))
-  (ci-jobs forge-project-configuration-ci-jobs
+  (ci-jobs forge-project-ci-jobs
            (default '()) (thunked))
-  (ci-jobs-trigger forge-project-configuration-ci-jobs-trigger ; one of 'post-receive-hook, 'cron, 'webhook
+  (ci-jobs-trigger forge-project-ci-jobs-trigger ; one of 'post-receive-hook, 'cron, 'webhook
                    (default (cond
                              ;; 'post-receive-hook for local repositories
-                             ((string-prefix? "/" (forge-project-configuration-repository
-                                                   this-forge-project-configuration))
+                             ((string-prefix? "/" (forge-project-repository this-forge-project))
                               'post-receive-hook)
                              ;; 'cron for remote repositories
                              (else 'cron)))
@@ -104,16 +103,16 @@
 (define (forge-activation config)
   (let ((projects
          (map (lambda (project)
-                (list (forge-project-configuration-user project)
-                      (forge-project-configuration-repository project)
-                      (forge-project-configuration-description project)
-                      (forge-project-configuration-website-directory project)
+                (list (forge-project-user project)
+                      (forge-project-repository project)
+                      (forge-project-description project)
+                      (forge-project-website-directory project)
                       (program-file
-                       (forge-project-configuration-name project)
+                       (forge-project-name project)
                        (ci-jobs-trigger-gexp
-                        (forge-project-configuration-ci-jobs project)
+                        (forge-project-ci-jobs project)
                         #:reason "post-receive hook"))
-                      (forge-project-configuration-ci-jobs-trigger project)))
+                      (forge-project-ci-jobs-trigger project)))
               (forge-configuration-projects config))))
     #~(begin
         (use-modules (rnrs io ports)
@@ -163,11 +162,10 @@
 derivation and returns its output path. GEXP-PRODUCER is a
 G-expression that expands to a lambda function. The lambda function
 takes one argument---the latest git checkout of PROJECT, a
-<forge-project-configuration> object---and returns a G-expression
-describing a derivation to run. JOB is a <forge-laminar-job> object
-representing the job that this derivation will be part
-of. GUIX_DAEMON_URI is a file name or URI designating the Guix daemon
-endpoint."
+<forge-project> object---and returns a G-expression describing a
+derivation to run. JOB is a <forge-laminar-job> object representing
+the job that this derivation will be part of. GUIX_DAEMON_URI is a
+file name or URI designating the Guix daemon endpoint."
   (with-imported-modules (source-module-closure '((forge build git)
                                                   (guix gexp)
                                                   (guix profiles))
@@ -189,10 +187,10 @@ endpoint."
                                           (exit #f)))
                          (run-with-store store
                            (mlet* %store-monad ((git-checkout (latest-git-checkout
-                                                               #$(string-append (forge-project-configuration-name project)
+                                                               #$(string-append (forge-project-name project)
                                                                                 "-checkout")
-                                                               #$(forge-project-configuration-repository project)
-                                                               #$(forge-project-configuration-repository-branch project)
+                                                               #$(forge-project-repository project)
+                                                               #$(forge-project-repository-branch project)
                                                                #:show-commit? #t))
                                                 (drv (gexp->derivation #$(string-append
                                                                           (forge-laminar-job-name job)
@@ -219,16 +217,16 @@ endpoint."
                                         (lambda (config)
                                           (append
                                            ;; jobs
-                                           (append-map forge-project-configuration-ci-jobs
+                                           (append-map forge-project-ci-jobs
                                                        (forge-configuration-projects config))
                                            ;; group jobs by project
                                            (filter-map (lambda (project)
-                                                         (match (forge-project-configuration-ci-jobs project)
+                                                         (match (forge-project-ci-jobs project)
                                                            (() #f)
                                                            ((job) #f)
                                                            (jobs
                                                             (forge-laminar-group
-                                                             (name (forge-project-configuration-name project))
+                                                             (name (forge-project-name project))
                                                              (regex (string-append "^(?:"
                                                                                    (string-join (map forge-laminar-job-name jobs)
                                                                                                 "|")
@@ -241,25 +239,25 @@ endpoint."
                      (service-extension mcron-service-type
                                         (lambda (config)
                                           (filter-map (lambda (project)
-                                                        (and (eq? (forge-project-configuration-ci-jobs-trigger project)
+                                                        (and (eq? (forge-project-ci-jobs-trigger project)
                                                                   'cron)
                                                              #~(job '(next-day)
                                                                     #$(program-file
-                                                                       (forge-project-configuration-name project)
+                                                                       (forge-project-name project)
                                                                        (ci-jobs-trigger-gexp
-                                                                        (forge-project-configuration-ci-jobs project)
+                                                                        (forge-project-ci-jobs project)
                                                                         #:reason "Cron job"))
                                                                     #:user "laminar")))
                                                       (forge-configuration-projects config))))
                      (service-extension webhook-service-type
                                         (lambda (config)
                                           (filter-map (lambda (project)
-                                                        (and (eq? (forge-project-configuration-ci-jobs-trigger project)
+                                                        (and (eq? (forge-project-ci-jobs-trigger project)
                                                                   'webhook)
                                                              (webhook-hook
-                                                              (id (forge-project-configuration-name project))
+                                                              (id (forge-project-name project))
                                                               (run (ci-jobs-trigger-gexp
-                                                                    (forge-project-configuration-ci-jobs project)
+                                                                    (forge-project-ci-jobs project)
                                                                     #:reason "Webhook")))))
                                                       (forge-configuration-projects config))))))
    (compose concatenate)
