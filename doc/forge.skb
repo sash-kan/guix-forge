@@ -51,4 +51,76 @@ and the rest are simple files that can be backed up easily.])
 email. guix-forge acknowledges this and prefers to support git's ,(ref
 :url "https://drewdevault.com/2018/07/02/Email-driven-git.html"
 :text "email driven workflow") with project discussion, bug reports
-and patches all happening over email.]))))
+and patches all happening over email.])))
+  (chapter :title [Reference]
+    (description
+     (record-documentation "forge/forge.scm" '<forge-configuration>
+       (record-field "projects"
+         [List of ,(ref :mark "<forge-project>" :text
+(code [<forge-project>])) objects describing projects managed by
+guix-forge]))
+     (record-documentation "forge/forge.scm" '<forge-project>
+       (record-field "name"
+         [Name of the project])
+       (record-field "repository"
+         [Path to a local git repository, or URI to a remote git
+repository])
+       (record-field "user"
+         [User who owns the repository if it is local. This field is
+disregarded if the repository is remote.])
+       (record-field "description"
+         [Short one-line description of the project. It is used to set
+the ,(file "description") file in the repository and will appear in
+the cgit web interface.])
+       (record-field "website-directory"
+         [Path to the document root of the project website. Its
+ownership is granted to the ,(code "laminar") user so that continuous
+integration jobs can write to it.])
+       (record-field "ci-jobs"
+         [List of ,(ref :mark "<forge-laminar-job>") objects
+describing ,(abbr :short "CI" :long "continuous integration") jobs to
+configure])
+       (record-field "ci-jobs-trigger"
+         [One of ,(code ['post-receive-hook]), ,(code ['webhook]), or
+,(code ['cron]) representing the type of trigger for continuous
+integration jobs.
+,(description
+  (item :key (code ['post-receive-hook])
+        [If ,(code ['post-receive-hook]) is specified, the ,(file
+"post-receive-hook") of the repository is configured to trigger CI
+jobs. This is possible only for local repositories. Note that any
+pre-existing ,(file "post-receive-hook") is overwritten.])
+  (item :key (code ['webhook]) [If ,(code
+['webhook]) is specified, a webhook server is configured to trigger CI
+jobs when a request is received on ,(samp "http://hostname:port/hooks/<name>") \.])
+  (item :key (code ['cron]) [If ,(code ['cron]) is
+specified ,a cron job triggers the CI jobs once a day.]))]
+         :default [,(code ['post-receive-hook]) for local repositories
+and ,(code ['cron]) for remote repositories])
+       (record-field "repository-branch"
+         [Main branch of the repository]))
+     (record-documentation "forge/laminar.scm" '<forge-laminar-job>
+       (record-field "name"
+         [Name of the job])
+       (record-field "run"
+         [G-expression to be run])
+       (record-field "after"
+         [G-expression to be run after the main job script]))
+     (record-documentation "forge/webhook.scm" '<webhook-configuration>
+       (record-field "package"
+         [,(code [webhook]) package to use])
+       (record-field "ip"
+         [IP address to listen on])
+       (record-field "port"
+         [Port to listen on])
+       (record-field "log-directory"
+         [Directory to write log files to])
+       (record-field "hooks"
+         [List of ,(ref :mark "<webhook-hook>" :text (code
+[<webhook-hook>])) objects describing hooks to configure]))
+     (record-documentation "forge/webhook.scm" '<webhook-hook>
+       (record-field "id"
+         [Identifier of the webhook. This hook is triggered at ,(ref
+:url [http://host:port/hooks/<id>]).])
+       (record-field "run"
+         [G-expression to run when the webhook is triggered])))))
