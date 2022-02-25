@@ -55,7 +55,8 @@
             forge-derivation-job?
             forge-derivation-job-name
             forge-derivation-job-run
-            forge-derivation-job-after))
+            forge-derivation-job-after
+            gexp-producer->derivation-output))
 
 (define-record-type* <forge-project-configuration>
   forge-project-configuration make-forge-project-configuration
@@ -237,6 +238,58 @@ derivation to run."
                               (mbegin %store-monad
                                 (built-derivations (list tests-drv))
                                 (return (derivation->output-path tests-drv))))))))))))))
+
+(define* (gexp-producer->derivation-output project job gexp-producer
+                                           #:key (guix-daemon-uri (%daemon-socket-uri)))
+  "Return a G-expression that builds another G-expression as a
+derivation and returns its output path. GEXP-PRODUCER is a
+G-expression that expands to a lambda function. The lambda function
+takes one argument---the latest git checkout of PROJECT, a
+<forge-project-configuration> object---and returns a G-expression
+describing a derivation to run. JOB is a <forge-laminar-job> object
+representing the job that this derivation will be part
+of. GUIX_DAEMON_URI is a file name or URI designating the Guix daemon
+endpoint."
+  (with-imported-modules (source-module-closure '((forge build git)
+                                                  (guix gexp)
+                                                  (guix profiles))
+                                                #:select? import-module?)
+    (with-extensions (list guile-gcrypt guile-zlib)
+      (with-packages (list git-minimal nss-certs)
+        #~(begin
+            (use-modules (forge build git)
+                         (guix derivations)
+                         (guix gexp)
+                         (guix monads)
+                         (guix store)
+                         (rnrs exceptions))
+
+            (let ((derivation-output
+                   (parameterize ((%daemon-socket-uri #$guix-daemon-uri))
+                     (with-store store
+                       (guard (condition ((store-protocol-error? condition)
+                                          (exit #f)))
+                         (run-with-store store
+                           (mlet* %store-monad ((git-checkout (latest-git-checkout
+                                                               #$(string-append (forge-project-configuration-name project)
+                                                                                "-checkout")
+                                                               #$(forge-project-configuration-repository project)
+                                                               #$(forge-project-configuration-repository-branch project)
+                                                               #:show-commit? #t))
+                                                (drv (gexp->derivation #$(string-append
+                                                                          (forge-laminar-job-name job)
+                                                                          "-derivation")
+                                                       (#$gexp-producer git-checkout)
+                                                       #:guile-for-build (read-derivation-from-file
+                                                                          #$(raw-derivation-file
+                                                                             (with-store store
+                                                                               (package-derivation store guile-3.0))))
+                                                       #:substitutable? #f)))
+                             (mbegin %store-monad
+                               (built-derivations (list drv))
+                               (return (derivation->output-path drv))))))))))
+              (format (current-error-port) "Built ~a successfully~%" derivation-output)
+              derivation-output))))))
 
 (define forge-service-type
   (service-type
