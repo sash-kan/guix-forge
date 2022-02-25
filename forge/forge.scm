@@ -39,7 +39,6 @@
   #:export (forge-service-type
             forge-configuration
             forge-configuration?
-            forge-configuration-guix-daemon-uri
             forge-configuration-projects
             forge-project-configuration
             forge-project-configuration?
@@ -51,11 +50,6 @@
             forge-project-configuration-website-directory
             forge-project-configuration-ci-jobs
             forge-project-configuration-ci-jobs-trigger
-            forge-derivation-job
-            forge-derivation-job?
-            forge-derivation-job-name
-            forge-derivation-job-run
-            forge-derivation-job-after
             gexp-producer->derivation-output))
 
 (define-record-type* <forge-project-configuration>
@@ -86,44 +80,11 @@
                              (else 'cron)))
                    (thunked)))
 
-(define-record-type* <forge-derivation-job>
-  forge-derivation-job make-forge-derivation-job
-  forge-derivation-job?
-  (name forge-derivation-job-name)
-  (run forge-derivation-job-run)
-  (after forge-derivation-job-after
-         (default #f)))
-
 (define-record-type* <forge-configuration>
   forge-configuration make-forge-configuration
   forge-configuration?
-  (guix-daemon-uri forge-configuration-guix-daemon-uri
-                   (default (%daemon-socket-uri)))
   (projects forge-configuration-projects
             (default '())))
-
-(define (forge-project-configuration-laminar-jobs project config)
-  "Return CI jobs of PROJECT as a list of <forge-laminar-job>
-objects. PROJECT is a <forge-project-configuration> object that is
-part of CONFIG, a <forge-configuration> object. If PROJECT has jobs
-described by <forge-derivation-job> objects, transform them to
-<forge-laminar-job> objects."
-  (map (lambda (job)
-         (if (forge-derivation-job? job)
-             (forge-laminar-job
-              (name (forge-derivation-job-name job))
-              (run (gexp-producer->job-script
-                    (forge-project-configuration-repository project)
-                    (forge-project-configuration-repository-branch project)
-                    (forge-derivation-job-run job)
-                    #:git-checkout-name (string-append (forge-project-configuration-name project)
-                                                       "-checkout")
-                    #:derivation-name (string-append (forge-derivation-job-name job)
-                                                     "-derivation")
-                    #:guix-daemon-uri (forge-configuration-guix-daemon-uri config)))
-              (after (forge-derivation-job-after job)))
-             job))
-       (forge-project-configuration-ci-jobs project)))
 
 (define* (ci-jobs-trigger-gexp ci-jobs #:key reason)
   "Return a G-expression that triggers CI-JOBS. CI-JOBS is a list of
@@ -150,7 +111,7 @@ described by <forge-derivation-job> objects, transform them to
                       (program-file
                        (forge-project-configuration-name project)
                        (ci-jobs-trigger-gexp
-                        (forge-project-configuration-laminar-jobs project config)
+                        (forge-project-configuration-ci-jobs project)
                         #:reason "post-receive hook"))
                       (forge-project-configuration-ci-jobs-trigger project)))
               (forge-configuration-projects config))))
@@ -195,49 +156,6 @@ described by <forge-derivation-job> objects, transform them to
   (match name
     (('forge _ ...) #t)
     (name (guix-module-name? name))))
-
-(define* (gexp-producer->job-script git-repository git-branch gexp-producer
-                                    #:key git-checkout-name derivation-name guix-daemon-uri)
-  "Return a G-expression describing a laminar job script.
-GEXP-PRODUCER is a G-expression that expands to a lambda function.
-The lambda function takes one argument---the latest git checkout of
-GIT-REPOSITORY at GIT-BRANCH---and returns a G-expression describing a
-derivation to run."
-  (with-imported-modules (source-module-closure '((forge build git)
-                                                  (guix gexp)
-                                                  (guix profiles))
-                                                #:select? import-module?)
-    (with-extensions (list guile-gcrypt guile-zlib)
-      (with-packages (list git-minimal nss-certs)
-        #~(begin
-            (use-modules (forge build git)
-                         (guix derivations)
-                         (guix gexp)
-                         (guix monads)
-                         (guix store)
-                         (rnrs exceptions))
-
-            (parameterize ((%daemon-socket-uri #$guix-daemon-uri))
-              (with-store store
-                (guard (condition ((store-protocol-error? condition)
-                                   (exit #f)))
-                  (format (current-error-port)
-                          "Built ~a successfully~%"
-                          (run-with-store store
-                            (mlet* %store-monad ((git-checkout (latest-git-checkout #$git-checkout-name
-                                                                                    #$git-repository
-                                                                                    #$git-branch
-                                                                                    #:show-commit? #t))
-                                                 (tests-drv (gexp->derivation #$derivation-name
-                                                              (#$gexp-producer git-checkout)
-                                                              #:guile-for-build (read-derivation-from-file
-                                                                                 #$(raw-derivation-file
-                                                                                    (with-store store
-                                                                                      (package-derivation store guile-3.0))))
-                                                              #:substitutable? #f)))
-                              (mbegin %store-monad
-                                (built-derivations (list tests-drv))
-                                (return (derivation->output-path tests-drv))))))))))))))
 
 (define* (gexp-producer->derivation-output project job gexp-producer
                                            #:key (guix-daemon-uri (%daemon-socket-uri)))
@@ -301,11 +219,11 @@ endpoint."
                                         (lambda (config)
                                           (append
                                            ;; jobs
-                                           (append-map (cut forge-project-configuration-laminar-jobs <> config)
+                                           (append-map forge-project-configuration-ci-jobs
                                                        (forge-configuration-projects config))
                                            ;; group jobs by project
                                            (filter-map (lambda (project)
-                                                         (match (forge-project-configuration-laminar-jobs project config)
+                                                         (match (forge-project-configuration-ci-jobs project)
                                                            (() #f)
                                                            ((job) #f)
                                                            (jobs
@@ -329,7 +247,7 @@ endpoint."
                                                                     #$(program-file
                                                                        (forge-project-configuration-name project)
                                                                        (ci-jobs-trigger-gexp
-                                                                        (forge-project-configuration-laminar-jobs project config)
+                                                                        (forge-project-configuration-ci-jobs project)
                                                                         #:reason "Cron job"))
                                                                     #:user "laminar")))
                                                       (forge-configuration-projects config))))
@@ -341,7 +259,7 @@ endpoint."
                                                              (webhook-hook
                                                               (id (forge-project-configuration-name project))
                                                               (run (ci-jobs-trigger-gexp
-                                                                    (forge-project-configuration-laminar-jobs project config)
+                                                                    (forge-project-configuration-ci-jobs project)
                                                                     #:reason "Webhook")))))
                                                       (forge-configuration-projects config))))))
    (compose concatenate)
