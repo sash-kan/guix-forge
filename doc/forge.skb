@@ -20,6 +20,7 @@
 (use-modules (doc skribilo))
 
 (document :title [guix-forge]
+  (toc)
   (chapter :title [Introduction]
     (p [guix-forge is a Guix service that lets you run a complete
 ,(ref :url "https://en.wikipedia.org/wiki/Forge_(software)"
