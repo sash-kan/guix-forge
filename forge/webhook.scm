@@ -189,4 +189,5 @@ Everything else is the responsibility of the command's author.")
              (webhook-configuration
               (inherit config)
               (hooks (append (webhook-configuration-hooks config)
-                             hook-extensions)))))))
+                             hook-extensions)))))
+   (default-value (webhook-configuration))))
