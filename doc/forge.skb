@@ -17,7 +17,8 @@
 ;;; along with guix-forge.  If not, see
 ;;; <https://www.gnu.org/licenses/>.
 
-(use-modules (doc skribilo))
+(use-modules (skribilo source lisp)
+             (doc skribilo))
 
 (document :title [guix-forge]
   (toc)
@@ -53,6 +54,99 @@ email. guix-forge acknowledges this and prefers to support git's ,(ref
 :url "https://drewdevault.com/2018/07/02/Email-driven-git.html"
 :text "email driven workflow") with project discussion, bug reports
 and patches all happening over email.])))
+  (chapter :title [Tutorial]
+    (p [In this tutorial, you will learn how to set up guix-forge to
+host continuous integration for a project. For the purposes of this
+tutorial, we will set up continuous integration for the ,(ref :url
+[https://github.com/aconchillo/guile-json] :text [guile-json])
+project.])
+    (p [First, we clone the upstream guile-json repository into a
+local bare clone at ,(file [/srv/git/guile-json]).])
+    (prog [$ git clone --bare https://github.com/aconchillo/guile-json /srv/git/guile-json
+Cloning into bare repository '/srv/git/guile-json'...
+remote: Enumerating objects: 1216, done.
+remote: Counting objects: 100% (162/162), done.
+remote: Compressing objects: 100% (107/107), done.
+remote: Total 1216 (delta 96), reused 106 (delta 54), pack-reused 1054
+Receiving objects: 100% (1216/1216), 276.10 KiB \| 3.89 MiB/s, done.
+Resolving deltas: 100% (742/742), done.]
+          :line #f)
+    (p [Now that we have a git repository to work with, we start
+writing our Guix system configuration. We begin with a bunch of ,(code
+[use-modules]) statements importing all required modules.])
+    (prog (source :language scheme
+                  :file "doc/snippets/tutorial.scm"
+                  :start 0 :stop 9)
+          :line #f)
+    (p [Then, we define the G-expression that will be run as a
+continuous integration job on every commit. This G-expression uses
+,(code [invoke]) from ,(code [(guix build utils)]). Hence, we make it
+available to the G-expression using ,(code
+[with-imported-modules]). In addition, it needs a number of packages
+which we make available using ,(code [with-packages]). And finally,
+within the body of the G-expression, we have commands cloning the git
+repository, building the source and running the tests.])
+    (prog (source :language scheme
+                  :file "doc/snippets/tutorial.scm"
+                  :start 11 :stop 22)
+          :line #f)
+    (p [Now, we configure a ,(code [<forge-project>]) record that
+holds metadata about the project and wires up the G-expression we just
+defined into a continuous integration job.])
+    (prog (source :language scheme
+                  :file "doc/snippets/tutorial.scm"
+                  :start 24 :stop 32)
+          :line #f)
+    (p [The ,(code [name]) and ,(code [description]) fields are
+hopefully self-explanatory. The ,(code [user]) field specifies the
+user who will own the git repository at the path specified by ,(code
+[repository]). That user will therefore be able to push into the
+repository through ssh or similar. The ,(file [post-receive-hook]) in
+the repository will be managed by guix-forge to trigger a continuous
+integration run on every commit.])
+    (p [And finally, we put everything together in an ,(code
+[operating-system]) declaration. Notice the forge service configured
+with ,(code [guile-json-project]) and the laminar service configured
+with a port for the web interface to listen on.])
+    (prog (source :language scheme
+                  :file "doc/snippets/tutorial.scm"
+                  :start 34)
+          :line #f)
+    (p [Now that we have a complete ,(code [operating-system])
+definition, let's use the following command to build a
+container. After a lot of building, a container script should pop
+out.])
+    (prog [$ guix system container --network --share=/srv/git/guile-json tutorial.scm
+/gnu/store/ilg7c2hpkxhwircxpz22qhjsqp3i9har-run-container]
+          :line #f)
+    (p [The ,(code [--network]) flag specifies that the container
+should share the network namespace of the host. To us, this means that
+all ports opened by the container will be visible on the host without
+any port forwarding or complicated configuration. The ,(code
+[--share=/srv/git/guile-json]) option shares the git repository we
+cloned earlier, with the container.])
+    (p [To start the container, simply run the container script as
+root.])
+    (prog [# /gnu/store/ilg7c2hpkxhwircxpz22qhjsqp3i9har-run-container]
+          :line #f)
+    (p [Now, you can see the status of laminar and running jobs
+through its web interface listening on ,(ref
+:url "http://localhost:8080"). You can list and queue jobs on the
+command-line like so:])
+    (prog [$ laminarc show-jobs
+guile-json
+$ laminarc queue guile-json
+guile-json:1]
+          :line #f)
+    (p [That's it! You just set up your own continuous integration
+system and took the first steps to owning your code!])
+    (p [You could easily use the same configuration to configure a
+Guix system instead of a container. To do so, you will have to take
+care of defining the bootloader, file systems and other settings as
+per your needs. The overall configuration used in this tutorial is
+repeated below for your reference.])
+    (prog (source :language scheme
+                  :file "doc/snippets/tutorial.scm")))
   (chapter :title [Reference]
     (description
      (record-documentation "forge/forge.scm" '<forge-configuration>

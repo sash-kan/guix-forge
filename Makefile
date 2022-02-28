@@ -24,6 +24,7 @@ sources = $(wildcard forge/*.scm) $(wildcard forge/*/*.scm)
 doc_skribilo_config = doc/skribilo.scm
 doc_skribilo_config_go = $(doc_skribilo_config:.scm=.go)
 doc_sources = doc/forge.skb
+doc_snippets = $(wildcard doc/snippets/*.scm)
 doc_html = $(doc_sources:.skb=.html)
 
 .PHONY: all html clean
@@ -34,7 +35,7 @@ all: ;
 
 html: $(doc_html)
 
-$(doc_html): $(doc_sources) $(sources) $(doc_skribilo_config_go)
+$(doc_html): $(doc_sources) $(doc_snippets) $(sources) $(doc_skribilo_config_go)
 	rm -rf $@
 	mkdir -p $@
 	GUILE_LOAD_PATH=$(CURDIR):$(GUILE_LOAD_PATH) GUILE_LOAD_COMPILED_PATH=$(CURDIR):$(GUILE_LOAD_COMPILED_PATH) $(SKRIBILO) --target=html $< --output=$@/index.html
