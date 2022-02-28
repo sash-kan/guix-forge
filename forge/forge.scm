@@ -28,7 +28,6 @@
   #:use-module ((gnu packages guile) #:select (guile-3.0 guile-zlib))
   #:use-module ((gnu packages version-control) #:select (git-minimal))
   #:use-module (gnu services mcron)
-  #:use-module (guix gexp)
   #:use-module (guix modules)
   #:use-module (guix packages)
   #:use-module (guix records)
