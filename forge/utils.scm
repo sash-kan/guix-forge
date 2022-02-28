@@ -53,13 +53,18 @@ value."
 PACKAGES are available and their search path environment variables
 have been set."
   #~(begin
-      (use-modules (ice-9 match))
       ;; Add a reference to the profile.
       #$(profile-with-packages packages)
       ;; Set the environment.
-      (for-each (match-lambda
-                  ((variable . value)
-                   (setenv variable value)))
-                '#$(environment-with-packages packages))
+      ;; We pull out match-lambda using module-ref instead of using
+      ;; use-modules because this gexp will be substituted into other
+      ;; gexps and use-modules only works at the top-level.
+      (let-syntax ((match-lambda (macro-transformer
+                                  (module-ref (resolve-module '(ice-9 match))
+                                              'match-lambda))))
+        (for-each (match-lambda
+                    ((variable . value)
+                     (setenv variable value)))
+                  '#$(environment-with-packages packages)))
       ;; Run the provided expression.
       #$exp))
