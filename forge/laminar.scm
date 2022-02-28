@@ -21,6 +21,7 @@
   #:use-module (gnu)
   #:use-module (srfi srfi-1)
   #:use-module (gnu packages ci)
+  #:use-module (gnu services ci)
   #:use-module (guix records)
   #:export (forge-laminar-service-type
             forge-laminar-configuration
@@ -118,7 +119,11 @@
    (name 'forge-laminar)
    (description "Run forge-laminar.")
    (extensions (list (service-extension activation-service-type
-                                        forge-laminar-activation)))
+                                        forge-laminar-activation)
+                     ;; Extend the laminar service with a dummy value,
+                     ;; thus requiring it.
+                     (service-extension laminar-service-type
+                                        (const #t))))
    (compose concatenate)
    (extend (lambda (config extended-values)
              (forge-laminar-configuration
