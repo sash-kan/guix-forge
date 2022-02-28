@@ -173,39 +173,59 @@ file name or URI designating the Guix daemon endpoint."
     (with-extensions (list guile-gcrypt guile-zlib)
       (with-packages (list git-minimal nss-certs)
         #~(begin
-            (use-modules (forge build git)
-                         (guix derivations)
-                         (guix gexp)
-                         (guix monads)
-                         (guix store)
-                         (rnrs exceptions))
-
-            (let ((derivation-output
-                   (parameterize ((%daemon-socket-uri #$guix-daemon-uri))
-                     (with-store store
-                       (guard (condition ((store-protocol-error? condition)
-                                          (exit #f)))
-                         (run-with-store store
-                           (mlet* %store-monad ((git-checkout (latest-git-checkout
-                                                               #$(string-append (forge-project-name project)
-                                                                                "-checkout")
-                                                               #$(forge-project-repository project)
-                                                               #$(forge-project-repository-branch project)
-                                                               #:show-commit? #t))
-                                                (drv (gexp->derivation #$(string-append
-                                                                          (forge-laminar-job-name job)
-                                                                          "-derivation")
-                                                       (#$gexp-producer git-checkout)
-                                                       #:guile-for-build (read-derivation-from-file
-                                                                          #$(raw-derivation-file
-                                                                             (with-store store
-                                                                               (package-derivation store guile-3.0))))
-                                                       #:substitutable? #f)))
-                             (mbegin %store-monad
-                               (built-derivations (list drv))
-                               (return (derivation->output-path drv))))))))))
-              (format (current-error-port) "Built ~a successfully~%" derivation-output)
-              derivation-output))))))
+            ;; We pull out macros using module-ref and functions using
+            ;; @@ instead of using use-modules because this gexp might
+            ;; be substituted into other gexps and use-modules only
+            ;; works at the top-level.
+            (let-syntax ((guard (macro-transformer
+                                 (module-ref (resolve-module '(rnrs exceptions))
+                                             'guard)))
+                         (mbegin (macro-transformer
+                                  (module-ref (resolve-module '(guix monads))
+                                              'mbegin)))
+                         (mlet* (macro-transformer
+                                 (module-ref (resolve-module '(guix monads))
+                                             'mlet*)))
+                         (with-store (macro-transformer
+                                      (module-ref (resolve-module '(guix store))
+                                                  'with-store)))
+                         (return (identifier-syntax ((@@ (guix store) %store-monad)
+                                                     %return))))
+              (let* ((latest-git-checkout (@@ (forge build git) latest-git-checkout))
+                     (built-derivations (@@ (guix derivations) built-derivations))
+                     (derivation->output-path (@@ (guix derivations) derivation->output-path))
+                     (read-derivation-from-file (@@ (guix derivations) read-derivation-from-file))
+                     (gexp->derivation (@@ (guix gexp) gexp->derivation))
+                     (%daemon-socket-uri (@@ (guix store) %daemon-socket-uri))
+                     (%store-monad (@@ (guix store) %store-monad))
+                     (store-protocol-error? (@@ (guix store) store-protocol-error?))
+                     (run-with-store (@@ (guix store) run-with-store))
+                     (derivation-output
+                      (parameterize ((%daemon-socket-uri #$guix-daemon-uri))
+                        (with-store store
+                          (guard (condition ((store-protocol-error? condition)
+                                             (exit #f)))
+                            (run-with-store store
+                              (mlet* %store-monad ((git-checkout (latest-git-checkout
+                                                                  #$(string-append (forge-project-name project)
+                                                                                   "-checkout")
+                                                                  #$(forge-project-repository project)
+                                                                  #$(forge-project-repository-branch project)
+                                                                  #:show-commit? #t))
+                                                   (drv (gexp->derivation #$(string-append
+                                                                             (forge-laminar-job-name job)
+                                                                             "-derivation")
+                                                          (#$gexp-producer git-checkout)
+                                                          #:guile-for-build (read-derivation-from-file
+                                                                             #$(raw-derivation-file
+                                                                                (with-store store
+                                                                                  (package-derivation store guile-3.0))))
+                                                          #:substitutable? #f)))
+                                (mbegin %store-monad
+                                  (built-derivations (list drv))
+                                  (return (derivation->output-path drv))))))))))
+                (format (current-error-port) "Built ~a successfully~%" derivation-output)
+                derivation-output)))))))
 
 (define forge-service-type
   (service-type
