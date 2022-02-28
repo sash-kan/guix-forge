@@ -40,9 +40,10 @@
   (newline)
   (force-output))
 
-(define* (download-git-to-store store name url branch #:key show-commit?)
+(define* (download-git-to-store store name url #:key branch show-commit?)
   "Download BRANCH of git repository from URL to STORE under NAME and
-return store path. git and certificates should be in the environment."
+return store path. If BRANCH is not specified, the default branch is
+downloaded. git and certificates should be in the environment."
   (call-with-temporary-directory
    (lambda (directory)
      (with-directory-excursion directory
@@ -53,7 +54,12 @@ return store path. git and certificates should be in the environment."
                                   (invoke-error-arguments condition)
                                   (invoke-error-exit-status condition))
                           (exit #f)))
-         (invoke "git" "clone" "--quiet" "--depth" "1" "--branch" branch url "."))
+         (apply invoke
+                "git" "clone" "--quiet" "--depth" "1" url
+                (append (if branch
+                            (list "--branch" branch)
+                            (list))
+                        (list "."))))
        (when show-commit?
          (hline)
          (invoke "git" "--no-pager" "log")

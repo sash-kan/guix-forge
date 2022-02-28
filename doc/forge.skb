@@ -98,7 +98,8 @@ specified ,a cron job triggers the CI jobs once a day.]))]
          :default [,(code ['post-receive-hook]) for local repositories
 and ,(code ['cron]) for remote repositories])
        (record-field "repository-branch"
-         [Main branch of the repository]))
+         [Main branch of the repository. This field is currently
+unused unused, and may be deprecated in the future.]))
      (record-documentation "forge/laminar.scm" '<forge-laminar-job>
        (record-field "name"
          [Name of the job])

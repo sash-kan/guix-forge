@@ -210,7 +210,6 @@ file name or URI designating the Guix daemon endpoint."
                                                                   #$(string-append (forge-project-name project)
                                                                                    "-checkout")
                                                                   #$(forge-project-repository project)
-                                                                  #$(forge-project-repository-branch project)
                                                                   #:show-commit? #t))
                                                    (drv (gexp->derivation #$(string-append
                                                                              (forge-laminar-job-name job)
