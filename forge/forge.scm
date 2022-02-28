@@ -50,7 +50,7 @@
             forge-project-website-directory
             forge-project-ci-jobs
             forge-project-ci-jobs-trigger
-            gexp-producer->derivation-output))
+            derivation-job-gexp))
 
 (define-record-type* <forge-project>
   forge-project make-forge-project
@@ -156,8 +156,8 @@
     (('forge _ ...) #t)
     (name (guix-module-name? name))))
 
-(define* (gexp-producer->derivation-output project job gexp-producer
-                                           #:key (guix-daemon-uri (%daemon-socket-uri)))
+(define* (derivation-job-gexp project job gexp-producer
+                              #:key (guix-daemon-uri (%daemon-socket-uri)))
   "Return a G-expression that builds another G-expression as a
 derivation and returns its output path. GEXP-PRODUCER is a
 G-expression that expands to a lambda function. The lambda function
