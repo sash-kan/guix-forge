@@ -55,7 +55,12 @@ downloaded. git and certificates should be in the environment."
                                   (invoke-error-exit-status condition))
                           (exit #f)))
          (apply invoke
-                "git" "clone" "--quiet" "--depth" "1" url
+                "git" "clone" "--quiet" "--depth" "1"
+                ;; Append file:// to local repository path so that
+                ;; shallow clone works.
+                (if (string-prefix? "/" url)
+                    (string-append "file://" url)
+                    url)
                 (append (if branch
                             (list "--branch" branch)
                             (list))
