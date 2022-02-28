@@ -6,17 +6,13 @@ body {
     padding: 0 10px;
 }
 
-pre, code {
-    background-color: #f0f0f0;
-}
-
 pre {
+    background-color: #f0f0f0;
     padding: 1em;
 }
 
-code {
-    padding-left: 0.2em;
-    padding-right: 0.2em;
+code, samp {
+    font-size: 0.8em;
 }
 
 /* Make the SVG badges clickable. */
