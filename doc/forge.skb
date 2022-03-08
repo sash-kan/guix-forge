@@ -149,12 +149,12 @@ repeated below for your reference.])
                   :file "doc/snippets/tutorial.scm")))
   (chapter :title [Reference]
     (description
-     (record-documentation "forge/forge.scm" '<forge-configuration>
+     (record-documentation "guix/forge/forge.scm" '<forge-configuration>
        (record-field "projects"
          [List of ,(ref :mark "<forge-project>" :text
 (code [<forge-project>])) objects describing projects managed by
 guix-forge]))
-     (record-documentation "forge/forge.scm" '<forge-project>
+     (record-documentation "guix/forge/forge.scm" '<forge-project>
        (record-field "name"
          [Name of the project])
        (record-field "repository"
@@ -195,14 +195,14 @@ and ,(code ['cron]) for remote repositories])
        (record-field "repository-branch"
          [Main branch of the repository. This field is currently
 unused unused, and may be deprecated in the future.]))
-     (record-documentation "forge/laminar.scm" '<forge-laminar-job>
+     (record-documentation "guix/forge/laminar.scm" '<forge-laminar-job>
        (record-field "name"
          [Name of the job])
        (record-field "run"
          [G-expression to be run])
        (record-field "after"
          [G-expression to be run after the main job script]))
-     (record-documentation "forge/webhook.scm" '<webhook-configuration>
+     (record-documentation "guix/forge/webhook.scm" '<webhook-configuration>
        (record-field "package"
          [,(code [webhook]) package to use])
        (record-field "ip"
@@ -214,7 +214,7 @@ unused unused, and may be deprecated in the future.]))
        (record-field "hooks"
          [List of ,(ref :mark "<webhook-hook>" :text (code
 [<webhook-hook>])) objects describing hooks to configure]))
-     (record-documentation "forge/webhook.scm" '<webhook-hook>
+     (record-documentation "guix/forge/webhook.scm" '<webhook-hook>
        (record-field "id"
          [Identifier of the webhook. This hook is triggered at ,(ref
 :url [http://host:port/hooks/<id>]).])
