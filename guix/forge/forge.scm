@@ -156,15 +156,21 @@
     (name (guix-module-name? name))))
 
 (define* (derivation-job-gexp project job gexp-producer
-                              #:key (guix-daemon-uri (%daemon-socket-uri)))
+                              #:key (guix-daemon-uri (%daemon-socket-uri)) deep-clone?)
   "Return a G-expression that builds another G-expression as a
 derivation and returns its output path. GEXP-PRODUCER is a
 G-expression that expands to a lambda function. The lambda function
 takes one argument---the latest git checkout of PROJECT, a
 <forge-project> object---and returns a G-expression describing a
 derivation to run. JOB is a <forge-laminar-job> object representing
-the job that this derivation will be part of. GUIX_DAEMON_URI is a
-file name or URI designating the Guix daemon endpoint."
+the job that this derivation will be part of.
+
+GUIX_DAEMON_URI is a file name or URI designating the Guix daemon
+endpoint.
+
+If DEEP-CLONE? is #t, the git checkout is a deep clone of the
+repository that includes the .git directory. Else, it is a shallow
+clone and does not include the .git directory."
   (with-imported-modules (source-module-closure '((forge build git)
                                                   (guix gexp)
                                                   (guix profiles))
@@ -209,6 +215,7 @@ file name or URI designating the Guix daemon endpoint."
                                                                   #$(string-append (forge-project-name project)
                                                                                    "-checkout")
                                                                   #$(forge-project-repository project)
+                                                                  #:deep-clone? #$deep-clone?
                                                                   #:show-commit? #t))
                                                    (drv (gexp->derivation #$(string-append
                                                                              (forge-laminar-job-name job)
