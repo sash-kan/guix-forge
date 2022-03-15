@@ -74,7 +74,7 @@ shallow cloned and the .git directory is not included."
                         (list "."))))
        (when show-commit?
          (hline)
-         (invoke "git" "log" "HEAD~1..HEAD")
+         (invoke "git" "log" "--max-count" "1")
          (hline))
        (unless deep-clone?
          (delete-file-recursively ".git")))
