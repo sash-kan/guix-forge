@@ -146,7 +146,8 @@
                      ;; Set ownership of website directory.
                      (when website-directory
                        (let ((user (getpw "laminar")))
-                         (chown website-directory (passwd:uid user) (passwd:gid user))))))
+                         (chown (dirname website-directory)
+                                (passwd:uid user) (passwd:gid user))))))
                   '#$projects))))
 
 (define (import-module? name)

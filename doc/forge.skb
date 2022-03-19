@@ -168,9 +168,11 @@ disregarded if the repository is remote.])
 the ,(file "description") file in the repository and will appear in
 the cgit web interface.])
        (record-field "website-directory"
-         [Path to the document root of the project website. Its
-ownership is granted to the ,(code "laminar") user so that continuous
-integration jobs can write to it.])
+         [Path to the document root of the project website. The
+ownership of its parent directory is granted to the ,(code "laminar")
+user. The idea is that the website is built by a Guix derivation as a
+store item and a symbolic link to that store item is created in the
+parent directory.])
        (record-field "ci-jobs"
          [List of ,(ref :mark "<forge-laminar-job>") objects
 describing ,(abbr :short "CI" :long "continuous integration") jobs to
