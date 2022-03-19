@@ -29,6 +29,10 @@ A choice of different software components may be offered provided it does not co
       "7F73 0343 F2F0 9F3C 77BF  79D3 2E25 EE8B 6180 2BB3"))))
 #+END_SRC
 
+* Documentation
+
+The [[https://guix-forge.systemreboot.net/manual/dev/en/][guix-forge manual]] is available online.
+
 * Philosophy
 
 In order to empower ordinary users, software should not just be free (as in freedom), but also be simple and easy to deploy, especially for small-scale deployments. /guix-forge/ is therefore minimalistic, and does not require running large database servers such as MariaDB and PostgreSQL.
