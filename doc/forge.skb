@@ -66,7 +66,12 @@ and the rest are simple files that can be backed up easily.])
 email. guix-forge acknowledges this and prefers to support git's ,(ref
 :url "https://drewdevault.com/2018/07/02/Email-driven-git.html"
 :text "email driven workflow") with project discussion, bug reports
-and patches all happening over email.])))
+and patches all happening over email.])
+      (p [guix-forge is opinionated and will not expose all features
+provided by the software components underlying it. Keeping
+configuration options to a minimum is necessary to help casual users
+deploy their own forge, and to reduce the likelihood of configuration
+bugs.])))
   (chapter :title [Tutorial]
     (p [In this tutorial, you will learn how to set up guix-forge to
 host continuous integration for a project. For the purposes of this

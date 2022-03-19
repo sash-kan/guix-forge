@@ -36,3 +36,5 @@ In order to empower ordinary users, software should not just be free (as in free
 While some state is inevitable, server software should strive to be as stateless as an old analog television set. You switch it on, and it works all the time. There are no pesky software updates, and complex hidden state. /guix-forge/ tries to be as stateless as possible. Almost all of /guix-forge's/ state can be version controlled, and the rest are simple files that can be backed up easily.
 
 [[https://drewdevault.com/2018/07/23/Git-is-already-distributed.html][Git is already federated and decentralized]] with email. /guix-forge/ acknowledges this and prefers to support git's [[https://drewdevault.com/2018/07/02/Email-driven-git.html][email driven workflow]] with project discussion, bug reports and patches all happening over email.
+
+/guix-forge/ is opinionated and will not expose all features provided by the software components underlying it. Keeping configuration options to a minimum is necessary to help casual users deploy their own forge, and to reduce the likelihood of configuration bugs.
