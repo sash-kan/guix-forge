@@ -2,6 +2,15 @@
 
 /guix-forge/ is a Guix service that lets you run a complete [[https://en.wikipedia.org/wiki/Forge_(software)][software forge]] in the manner of GitHub, GitLab, etc. Unlike other free software forges such as GitLab, Gitea, etc., /guix-forge/ is not a monolith but is an assemblage of several pieces of server software wired up to function as one. In this sense, it is a /meta-service/. /guix-forge/ does for software forges what [[https://mailinabox.email/][Mail-in-a-Box]] does for email.
 
+/guix-forge/ integrates the following software components:
+
+- [X] laminar for continuous integration
+- [ ] web server to serve static project sites
+- [ ] cgit to serve project git repositories on the web
+- [ ] public-inbox for project discussions
+
+A choice of different software components may be offered provided it does not complicate the interface too much.
+
 /guix-forge/ is provided on a best effort basis. Its design is unstable, and open to change. We will try our best to not break your system configuration often, but it might happen.
 
 * Installation

@@ -32,6 +32,19 @@ software wired up to function as one. In this sense, it is a
 ,(emph "meta-service"). guix-forge does for software forges what ,(ref
 :url "https://mailinabox.email/" :text "Mail-in-a-Box") does for
 email.])
+    (p [guix-forge integrates the following software components:]
+       (itemize
+        (item [,(ref :url "https://laminar.ohwg.net/" :text "laminar")
+for continuous integration])))
+    (p [In the future, it will also provide:]
+       (itemize
+        (item [web server to serve static project sites])
+        (item [,(ref :url "https://git.zx2c4.com/cgit/" :text "cgit")
+to serve project git repositories on the web])
+        (item [,(ref :url "https://public-inbox.org/README.html"
+:text "public-inbox") for project discussions])))
+    (p [A choice of different software components may be offered
+provided it does not complicate the interface too much.])
     (p [guix-forge is provided on a best effort basis. Its
 design is unstable, and open to change. We will try our best to not
 break your system configuration often, but it might happen.])
