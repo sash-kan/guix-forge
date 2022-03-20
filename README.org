@@ -4,10 +4,10 @@
 
 /guix-forge/ integrates the following software components:
 
-- [X] laminar for continuous integration
+- [X] [[https://laminar.ohwg.net][laminar]] for continuous integration
 - [ ] web server to serve static project sites
-- [ ] cgit to serve project git repositories on the web
-- [ ] public-inbox for project discussions
+- [ ] [[https://git.zx2c4.com/cgit/][cgit]] to serve project git repositories on the web
+- [ ] [[https://public-inbox.org/README.html][public-inbox]] for project discussions
 
 A choice of different software components may be offered provided it does not complicate the interface too much.
 
