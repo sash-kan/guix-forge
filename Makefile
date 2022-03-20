@@ -51,4 +51,4 @@ website/manual/dev/en: $(doc_html)
 	cp -vr $^ $@
 
 clean:
-	rm -f $(doc_skribilo_config_go)
+	rm -rf $(doc_skribilo_config_go) website/index.html website/manual
