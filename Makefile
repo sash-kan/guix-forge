@@ -26,6 +26,7 @@ doc_skribilo_config_go = $(doc_skribilo_config:.scm=.go)
 doc_sources = doc/forge.skb
 doc_snippets = $(wildcard doc/snippets/*.scm)
 doc_html = $(doc_sources:.skb=.html)
+fonts = $(addprefix $(GUIX_ENVIRONMENT)/share/fonts/web/, charter_regular.woff2)
 
 .PHONY: all html clean
 all: ;
@@ -40,7 +41,7 @@ $(doc_html): $(doc_sources) $(doc_snippets) $(sources) $(doc_skribilo_config_go)
 	mkdir -p $@
 	GUILE_LOAD_PATH=$(CURDIR):$(GUILE_LOAD_PATH) GUILE_LOAD_COMPILED_PATH=$(CURDIR):$(GUILE_LOAD_COMPILED_PATH) $(SKRIBILO) --target=html $< --output=$@/index.html
 
-website: website/index.html website/manual/dev/en
+website: website/index.html website/manual/dev/en website/fonts
 
 website/index.html: README.org build-aux/build-home-page.el
 	$(EMACS) -Q --batch --load build-aux/build-home-page.el --funcall build-website
@@ -50,5 +51,10 @@ website/manual/dev/en: $(doc_html)
 	mkdir -p $(dir $@)
 	cp -vr $^ $@
 
+website/fonts: $(fonts)
+	rm -rf $@
+	mkdir -p $@
+	cp -v $^ $@/
+
 clean:
-	rm -rf $(doc_skribilo_config_go) website/index.html website/manual
+	rm -rf $(doc_skribilo_config_go) website/index.html website/manual website/fonts
