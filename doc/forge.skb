@@ -96,14 +96,15 @@ writing our Guix system configuration. We begin with a bunch of ,(code
                   :file "doc/snippets/tutorial.scm"
                   :start 0 :stop 9)
           :line #f)
-    (p [Then, we define the G-expression that will be run as a
-continuous integration job on every commit. This G-expression uses
-,(code [invoke]) from ,(code [(guix build utils)]). Hence, we make it
-available to the G-expression using ,(code
-[with-imported-modules]). In addition, it needs a number of packages
-which we make available using ,(code [with-packages]). And finally,
-within the body of the G-expression, we have commands cloning the git
-repository, building the source and running the tests.])
+    (p [Then, we define the ,(ref :url
+"https://guix.gnu.org/en/manual/devel/en/html_node/G_002dExpressions.html"
+:text "G-expression") that will be run as a continuous integration job
+on every commit. This G-expression uses ,(code [invoke]) from ,(code
+[(guix build utils)]). Hence, we make it available to the G-expression
+using ,(code [with-imported-modules]). In addition, it needs a number
+of packages which we make available using ,(code [with-packages]). And
+finally, within the body of the G-expression, we have commands cloning
+the git repository, building the source and running the tests.])
     (prog (source :language scheme
                   :file "doc/snippets/tutorial.scm"
                   :start 11 :stop 22)
