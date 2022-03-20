@@ -26,7 +26,7 @@ doc_skribilo_config_go = $(doc_skribilo_config:.scm=.go)
 doc_sources = doc/forge.skb
 doc_snippets = $(wildcard doc/snippets/*.scm)
 doc_html = $(doc_sources:.skb=.html)
-fonts = $(addprefix $(GUIX_ENVIRONMENT)/share/fonts/web/, charter_regular.woff2)
+fonts = $(addprefix $(GUIX_ENVIRONMENT)/share/fonts/web/, charter_regular.woff2 FiraCode-Regular.woff2 FiraCode-SemiBold.woff2)
 
 .PHONY: all html clean
 all: ;
