@@ -129,9 +129,13 @@ defined into a continuous integration job.])
 hopefully self-explanatory. The ,(code [user]) field specifies the
 user who will own the git repository at the path specified by ,(code
 [repository]). That user will therefore be able to push into the
-repository through ssh or similar. The ,(file [post-receive-hook]) in
-the repository will be managed by guix-forge to trigger a continuous
-integration run on every commit.])
+repository through ssh or similar. git provides various ,(ref :url
+"https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks" :text
+"server-side hooks") that trigger on various events. Of these, the
+,(file [post-receive-hook]) triggers when pushed commits are
+received. guix-forge sets up a ,(file [post-receive-hook]) script in
+the repository to trigger a continuous integration run on every
+,(command [git push]).])
     (p [And finally, we put everything together in an ,(code
 [operating-system]) declaration. Notice the forge service configured
 with ,(code [guile-json-project]) and the laminar service configured
