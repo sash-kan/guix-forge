@@ -235,7 +235,10 @@ unused unused, and may be deprecated in the future.]))
        (record-field "run"
          [G-expression to be run])
        (record-field "after"
-         [G-expression to be run after the main job script]))
+         [G-expression to be run after the main job script])
+       (record-field "trigger?"
+         [If ,(code [#t]), this job is run on every commit. Else, it
+must be manually set up to run some other way.]))
      (record-documentation "guix/forge/webhook.scm" '<webhook-configuration>
        (record-field "package"
          [,(code [webhook]) package to use])

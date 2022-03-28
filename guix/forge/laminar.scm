@@ -34,6 +34,7 @@
             forge-laminar-job-name
             forge-laminar-job-run
             forge-laminar-job-after
+            forge-laminar-job-trigger?
             forge-laminar-group
             forge-laminar-group?
             forge-laminar-group-name
@@ -56,7 +57,9 @@
   (name forge-laminar-job-name)
   (run forge-laminar-job-run (thunked))
   (after forge-laminar-job-after
-         (default #f)))
+         (default #f))
+  (trigger? forge-laminar-job-trigger?
+            (default #t)))
 
 (define-record-type* <forge-laminar-group>
   forge-laminar-group make-forge-laminar-group

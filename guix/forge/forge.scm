@@ -97,7 +97,10 @@
           (setenv "LAMINAR_REASON" #$reason))
         (apply invoke
                #$(file-append laminar "/bin/laminarc")
-               "queue" '#$(map forge-laminar-job-name ci-jobs)))))
+               "queue" '#$(filter-map (lambda (job)
+                                        (and (forge-laminar-job-trigger? job)
+                                             (forge-laminar-job-name job)))
+                                      ci-jobs)))))
 
 (define (forge-activation config)
   (let ((projects
