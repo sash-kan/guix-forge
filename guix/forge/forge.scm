@@ -270,7 +270,8 @@ clone and does not include the .git directory."
                                                                   'cron)
                                                              #~(job '(next-day)
                                                                     #$(program-file
-                                                                       (forge-project-name project)
+                                                                       (string-append (forge-project-name project)
+                                                                                      "-cron-job")
                                                                        (ci-jobs-trigger-gexp
                                                                         (forge-project-ci-jobs project)
                                                                         #:reason "Cron job"))
