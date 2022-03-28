@@ -107,7 +107,8 @@
                       (forge-project-description project)
                       (forge-project-website-directory project)
                       (program-file
-                       (forge-project-name project)
+                       (string-append (forge-project-name project)
+                                      "-post-receive-hook")
                        (ci-jobs-trigger-gexp
                         (forge-project-ci-jobs project)
                         #:reason "post-receive hook"))
