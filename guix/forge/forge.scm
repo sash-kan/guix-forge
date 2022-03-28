@@ -23,7 +23,7 @@
   #:use-module (srfi srfi-26)
   #:use-module (ice-9 match)
   #:use-module ((gnu packages certs) #:select (nss-certs))
-  #:use-module (gnu packages ci)
+  #:use-module ((gnu packages ci) #:select (laminar))
   #:use-module ((gnu packages gnupg) #:select (guile-gcrypt))
   #:use-module ((gnu packages guile) #:select (guile-3.0 guile-zlib))
   #:use-module ((gnu packages version-control) #:select (git-minimal))
