@@ -96,12 +96,14 @@
                                      (let ((name (forge-laminar-job-name job))
                                            (run (forge-laminar-job-run job))
                                            (after (forge-laminar-job-after job)))
-                                       (cons (list (string-append name ".run")
-                                                   (program-file name run))
-                                             (if after
-                                                 (list (list (string-append name ".after")
-                                                             (program-file name after)))
-                                                 (list)))))
+                                       (cons (let ((run-name (string-append name ".run")))
+                                               (list run-name
+                                                     (program-file run-name run)))
+                                        (if after
+                                            (list (let ((after-name (string-append name ".after")))
+                                                    (list after-name
+                                                          (program-file after-name after))))
+                                            (list)))))
                                    (forge-laminar-configuration-jobs config)))
          #$jobs-directory)
         ;; Set permissions for laminar directory.
