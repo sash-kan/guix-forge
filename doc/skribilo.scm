@@ -65,6 +65,10 @@
 		  ,@(the-options opts #:ident #:class #:short #:long)))
        (body (the-body opts))))
 
+;; Create a dummy G-expression reader to avoid reader errors when
+;; reading source files for source-ref, record-documentation, etc.
+(read-hash-extend #\~ (const #t))
+
 ;; S-exp source links
 (define (source-uri file start-line end-line)
   "Return a URI referring to source FILE from START-LINE to END-LINE."
