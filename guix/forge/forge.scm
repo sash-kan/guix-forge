@@ -89,18 +89,33 @@
 <forge-laminar-job> objects."
   (with-imported-modules '((guix build utils))
     #~(begin
-        (use-modules (guix build utils))
+        (use-modules (guix build utils)
+                     (ice-9 match))
         ;; TODO: Only trigger on updates to the main/master branch.
-        (display "Triggering continuous integration jobs..." (current-error-port))
-        (newline (current-error-port))
-        (when #$reason
-          (setenv "LAMINAR_REASON" #$reason))
-        (apply invoke
-               #$(file-append laminar "/bin/laminarc")
-               "queue" '#$(filter-map (lambda (job)
-                                        (and (forge-laminar-job-trigger? job)
-                                             (forge-laminar-job-name job)))
-                                      ci-jobs)))))
+
+        ;; Trigger jobs if there are jobs that need to be
+        ;; triggered.
+        ;;
+        ;; Even if there are none, we still need to manage the
+        ;; post-receive-hook to ensure that it does not go
+        ;; stale. Suppose that in one generation the user configures
+        ;; CI jobs, but removes them in the next generation. If we did
+        ;; not write to the post-receive-hook in the second
+        ;; generation, it would still retain its previous contents and
+        ;; trigger the jobs from the first generation.
+        (match '#$(filter-map (lambda (job)
+                                (and (forge-laminar-job-trigger? job)
+                                     (forge-laminar-job-name job)))
+                              ci-jobs)
+          (() #t)
+          (job-names
+           (display "Triggering continuous integration jobs..." (current-error-port))
+           (newline (current-error-port))
+           (when #$reason
+             (setenv "LAMINAR_REASON" #$reason))
+           (apply invoke
+                  #$(file-append laminar "/bin/laminarc")
+                  "queue" job-names))))))
 
 (define (forge-activation config)
   (let ((projects
@@ -271,6 +286,8 @@ clone and does not include the .git directory."
                                           (filter-map (lambda (project)
                                                         (and (eq? (forge-project-ci-jobs-trigger project)
                                                                   'cron)
+                                                             (any forge-laminar-job-trigger?
+                                                                  (forge-project-ci-jobs project))
                                                              #~(job '(next-day)
                                                                     #$(program-file
                                                                        (string-append (forge-project-name project)
@@ -285,6 +302,8 @@ clone and does not include the .git directory."
                                           (filter-map (lambda (project)
                                                         (and (eq? (forge-project-ci-jobs-trigger project)
                                                                   'webhook)
+                                                             (any forge-laminar-job-trigger?
+                                                                  (forge-project-ci-jobs project))
                                                              (webhook-hook
                                                               (id (forge-project-name project))
                                                               (run (ci-jobs-trigger-gexp
