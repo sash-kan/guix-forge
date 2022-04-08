@@ -60,44 +60,9 @@ MANIFEST."
         ;; Run the provided expression.
         #$exp)))
 
-(define (profile-with-packages packages)
-  "Return profile with PACKAGES."
-  (with-store store
-    (run-with-store store
-      (mlet* %store-monad ((prof-drv (profile-derivation
-                                      (packages->manifest packages)))
-                           (profile -> (derivation->output-path prof-drv)))
-        (mbegin %store-monad
-          (built-derivations (list prof-drv))
-          (return profile))))))
-
-(define (environment-with-packages packages)
-  "Return environment of a profile with PACKAGES. Return value is an
-association list mapping the name of an environment variable to its
-value."
-  (map (match-lambda
-         ((search-path . value)
-          (cons (search-path-specification-variable search-path)
-                value)))
-       (profile-search-paths (profile-with-packages packages))))
-
 (define (with-packages packages exp)
   "Return a gexp executing EXP, another gexp, in an environment where
 PACKAGES are available and their search path environment variables
 have been set."
-  #~(begin
-      ;; Add a reference to the profile.
-      #$(profile-with-packages packages)
-      ;; Set the environment.
-      ;; We pull out match-lambda using module-ref instead of using
-      ;; use-modules because this gexp will be substituted into other
-      ;; gexps and use-modules only works at the top-level.
-      (let-syntax ((match-lambda (macro-transformer
-                                  (module-ref (resolve-module '(ice-9 match))
-                                              'match-lambda))))
-        (for-each (match-lambda
-                    ((variable . value)
-                     (setenv variable value)))
-                  '#$(environment-with-packages packages)))
-      ;; Run the provided expression.
-      #$exp))
+  (with-manifest (packages->manifest packages)
+                 exp))
