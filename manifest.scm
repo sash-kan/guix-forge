@@ -18,11 +18,49 @@
 ;;; <https://www.gnu.org/licenses/>.
 
 (use-modules (gnu packages autotools)
+             ((gnu packages fonts) #:prefix guix:)
              (gnu packages gettext)
              (gnu packages guile)
              ((gnu packages skribilo) #:prefix guix:)
              (guix git-download)
-             (guix packages))
+             (guix packages)
+             (guix utils))
+
+;; Install web fonts in font-charter and font-fira-code. There is a
+;; pending patchset https://issues.guix.gnu.org/54471 to do this in
+;; upstream Guix. Use the upstream Guix packages once that patchset
+;; lands in the upstream master branch.
+
+(define font-charter
+  (package
+    (inherit guix:font-charter)
+    (outputs '("out"))
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'install-web-fonts
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (source (getcwd))
+                    (fonts (string-append out "/share/fonts")))
+               (for-each (lambda (file)
+                           (install-file file (string-append fonts "/web")))
+                         (find-files source "\\.(woff|woff2)$"))))))))))
+
+(define font-fira-code
+  (package
+    (inherit guix:font-fira-code)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'install-web-fonts
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (source (getcwd))
+                    (fonts (string-append out "/share/fonts")))
+               (for-each (lambda (file)
+                           (install-file file (string-append fonts "/web")))
+                         (find-files source "\\.(woff|woff2)$"))))))))))
 
 ;; Use a later unreleased version of skribilo since we need certain
 ;; improvements and bug fixes from it.
@@ -49,4 +87,4 @@
          ,@(package-native-inputs guix:skribilo))))))
 
 (packages->manifest
- (list guile-3.0 skribilo))
+ (list font-charter font-fira-code guile-3.0 skribilo))
