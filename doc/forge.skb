@@ -132,9 +132,9 @@ user who will own the git repository at the path specified by ,(code
 repository through ssh or similar. git provides various ,(ref :url
 "https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks" :text
 "server-side hooks") that trigger on various events. Of these, the
-,(file [post-receive-hook]) triggers when pushed commits are
+,(file [post-receive]) hook triggers when pushed commits are
 received. guix-forge sets up a ,(source-ref "guix/forge/forge.scm"
-"\\(define\\* \\(ci-jobs-trigger-gexp" "post-receive-hook script") in
+"\\(define\\* \\(ci-jobs-trigger-gexp" "post-receive hook script") in
 the repository to trigger a continuous integration run on every
 ,(command [git push]).])
     (p [And finally, we put everything together in an ,(code
@@ -217,9 +217,9 @@ integration jobs.
 ,(description
   (item :key (code ['post-receive-hook])
         [If ,(code ['post-receive-hook]) is specified, the ,(file
-"post-receive-hook") of the repository is configured to trigger CI
+"post-receive") hook of the repository is configured to trigger CI
 jobs. This is possible only for local repositories. Note that any
-pre-existing ,(file "post-receive-hook") is overwritten.])
+pre-existing ,(file "post-receive") hook is overwritten.])
   (item :key (code ['webhook]) [If ,(code
 ['webhook]) is specified, a webhook server is configured to trigger CI
 jobs when a request is received on ,(samp "http://hostname:port/hooks/<name>") \.])
