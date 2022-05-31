@@ -224,7 +224,7 @@ pre-existing ,(file "post-receive-hook") is overwritten.])
 ['webhook]) is specified, a webhook server is configured to trigger CI
 jobs when a request is received on ,(samp "http://hostname:port/hooks/<name>") \.])
   (item :key (code ['cron]) [If ,(code ['cron]) is
-specified ,a cron job triggers the CI jobs once a day.]))]
+specified, a cron job triggers the CI jobs once a day.]))]
          :default [,(code ['post-receive-hook]) for local repositories
 and ,(code ['cron]) for remote repositories])
        (record-field "repository-branch"
