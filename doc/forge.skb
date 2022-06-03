@@ -240,6 +240,17 @@ unused unused, and may be deprecated in the future.]))
        (record-field "trigger?"
          [If ,(code [#t]), this job is run on every commit. Else, it
 must be manually set up to run some other way.]))
+     (record-documentation "guix/forge/socket.scm" '<forge-ip-socket>
+       (record-field "ip"
+         [IP address, either IPv4 or IPv6, as a string. The loopback
+address is ,(code ["127.0.0.1"]) and ,(code ["::1"]) for IPv4 and IPv6
+respectively. The any address is ,(code ["0.0.0.0"]) and ,(code
+["::"]) for IPv4 and IPv6 respectively.])
+       (record-field "port"
+         [Port number to listen on.]))
+     (record-documentation "guix/forge/socket.scm" '<forge-unix-socket>
+       (record-field "path"
+         [Path to socket file.]))
      (record-documentation "guix/forge/webhook.scm" '<webhook-configuration>
        (record-field "package"
          [,(code [webhook]) package to use])
