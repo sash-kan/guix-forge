@@ -63,7 +63,7 @@
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
-                      (url "https://git.systemreboot.net/skribilo")
+                      (url "https://git.savannah.gnu.org/git/skribilo.git")
                       (commit commit)))
                 (file-name (git-file-name name version))
                 (sha256
