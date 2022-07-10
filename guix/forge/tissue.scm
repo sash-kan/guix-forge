@@ -253,7 +253,7 @@ available both as a command-line program and as a web server.")
         #~(make-forkexec-constructor/container
            (list #$(file-append (tissue-configuration-package config)
                                 "/bin/tissue")
-                 "run-web"
+                 "web"
                  (string-append "--config=" #$(computed-file "tissue.conf"
                                                              (tissue-conf-gexp config))))
            #:user "tissue"
