@@ -78,8 +78,8 @@
 ;; TODO: Contribute tissue package upstream to Guix after its first
 ;; release.
 (define-public tissue
-  (let ((commit "743f2eb0b2f107c8089bbd925dbd5052ff9fa9f9")
-        (revision "0"))
+  (let ((commit "6d6285d071132960835f848a1703faaea2356937")
+        (revision "1"))
     (package
       (name "tissue")
       (version (git-version "0.1.0" revision commit))
@@ -91,7 +91,7 @@
                 (file-name (git-file-name name version))
                 (sha256
                  (base32
-                  "1fcxwclhpy0p17m6qingrzmaq0py1ys92v4p2ygyn69hmq9i048f"))))
+                  "1dlcy7m4gz1vmklyny4mxky9822q5hjc4qdmn42yf2qvh8xy62g5"))))
       (build-system gnu-build-system)
       (arguments
        (list #:make-flags #~(list (string-append "prefix=" #$output))
