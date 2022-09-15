@@ -221,7 +221,9 @@ available both as a command-line program and as a web server.")
                 (chown socket-directory (passwd:uid user) (passwd:gid user))))
             ;; Create state directory.
             (mkdir-p #$state-directory)
-            (chown #$state-directory (passwd:uid user) (passwd:gid user)))
+            (for-each (lambda (file)
+                        (chown file (passwd:uid user) (passwd:gid user)))
+                      (find-files #$state-directory #:directories? #t)))
           ;; Create host directories if they don't exist, and set
           ;; permissions.
           (for-each (match-lambda
